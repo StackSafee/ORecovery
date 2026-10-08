@@ -1679,7 +1679,7 @@
     box-shadow: 0 20px 70px rgba(0,0,0,0.4);
     border: 4px solid var(--gold);
   }
-  .qr-card canvas, .qr-card svg {
+  .qr-card canvas, .qr-card svg, .qr-card img {
     display: block;
     width: 320px;
     height: 320px;
@@ -1890,6 +1890,10 @@
             Simulated
           </button>
         </div>
+        <button class="btn btn-ghost" id="showQrBtn" title="Show the audience QR code">
+          <svg class="ico" viewBox="0 0 20 20" fill="currentColor"><path d="M2 2h7v7H2zm1.5 1.5v4h4v-4zM4 4h2v2H4zm7-2h7v7h-7zm1.5 1.5v4h4v-4zM13 4h2v2h-2zM2 11h7v7H2zm1.5 1.5v4h4v-4zM4 13h2v2H4zm7-2h2v2h-2zm2 2h2v2h-2zm-2 2h2v2h-2zm4 0h2v2h-2zm-2 2h2v2h-2zm2 0h2v2h-2z"/></svg>
+          Show QR
+        </button>
         <button class="btn btn-ghost" id="resetBtn">
           <svg class="ico" viewBox="0 0 20 20"><path d="M10 3a7 7 0 015.5 2.65V3h2v6h-6V7h2.78A5 5 0 1015 10h2a7 7 0 11-7-7z"/></svg>
           Reset
@@ -2030,7 +2034,7 @@
         </div>
         <div class="qr-right">
           <div class="qr-card">
-            <canvas id="qrCanvas"></canvas>
+            <img id="qrImg" alt="Scan this QR to join" />
           </div>
           <div class="qr-url" id="qrUrl">loading…</div>
         </div>
@@ -2583,7 +2587,6 @@
 </div>
 
 <script src="/socket.io/socket.io.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
 <script>
   // ---------- Theme toggle ----------
   const root = document.documentElement;
@@ -3697,7 +3700,7 @@
 
     if (canShow) {
       recoShown = true;
-      hideQR();
+      // Note: QR stays up until user explicitly dismisses it; use "Show/Hide QR" button
       pushStream({ time: clockFromStart(elapsed), kind: 'sys', body: `<b>Applying scheduling policy</b> · clinical priority → surgeon match → pre‑op recency → waiting time` });
       document.getElementById('recoPanel').innerHTML = `
         <div class="reco-waiting"><div class="spinner"></div>Ranking ${availablePatients.length} available patients…</div>
@@ -3765,10 +3768,8 @@
     const stage = document.getElementById('qrStage');
     const url = window.location.origin + '/respond';
     document.getElementById('qrUrl').textContent = url.replace(/^https?:\/\//, '');
-    const canvas = document.getElementById('qrCanvas');
-    if (typeof QRCode !== 'undefined' && canvas) {
-      QRCode.toCanvas(canvas, url, { width: 320, margin: 1, color: { dark: '#0A2E1F', light: '#FFFFFF' } }, (err) => { if (err) console.error(err); });
-    }
+    const img = document.getElementById('qrImg');
+    if (img) img.src = '/qr?url=' + encodeURIComponent(url);
     stage.hidden = false;
     updateQrCount();
   }
@@ -3776,6 +3777,7 @@
     document.getElementById('qrStage').hidden = true;
   }
   document.getElementById('qrDismiss').addEventListener('click', hideQR);
+  document.getElementById('showQrBtn').addEventListener('click', showQR);
 
   // ---------- Live phone (pitch mode) ----------
   function updateLivePhone(patient) {

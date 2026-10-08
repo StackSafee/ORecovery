@@ -5,6 +5,7 @@ const express = require('express');
 const http = require('http');
 const path = require('path');
 const { Server } = require('socket.io');
+const QRCode = require('qrcode');
 
 const app = express();
 const server = http.createServer(app);
@@ -15,6 +16,24 @@ app.use(express.static(path.join(__dirname, 'public')));
 // Explicit respond route so /respond works on Railway without a trailing slash
 app.get('/respond', (_req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'respond.html'));
+});
+
+// Server-side QR generation — bulletproof across all browsers / ad blockers
+app.get('/qr', async (req, res) => {
+  const text = req.query.url || `${req.protocol}://${req.get('host')}/respond`;
+  try {
+    res.type('png');
+    res.setHeader('Cache-Control', 'public, max-age=60');
+    const buf = await QRCode.toBuffer(text, {
+      width: 640,
+      margin: 1,
+      color: { dark: '#0A2E1F', light: '#FFFFFF' },
+      errorCorrectionLevel: 'M',
+    });
+    res.send(buf);
+  } catch (e) {
+    res.status(500).send(String(e));
+  }
 });
 
 // ---------- Patient seed ----------
