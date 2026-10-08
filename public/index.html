@@ -3584,6 +3584,7 @@
       updateQrCount();
     });
     socket.on('unclaimed', ({ pid }) => {
+      liveClaimedCount = Math.max(0, liveClaimedCount - 1);
       updateQrCount();
     });
     socket.on('response', ({ pid, response, source }) => {

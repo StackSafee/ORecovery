@@ -272,9 +272,23 @@
     section.hidden = false;
   }
 
+  // Persistent phone ID — survives preloads, reconnects, refreshes.
+  // Uses sessionStorage so each new tab is a new patient (good for demos),
+  // but same tab reconnecting keeps the same assignment.
+  let phoneId;
+  try {
+    phoneId = sessionStorage.getItem('orecover-phoneid');
+    if (!phoneId) {
+      phoneId = 'ph_' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+      sessionStorage.setItem('orecover-phoneid', phoneId);
+    }
+  } catch (e) {
+    phoneId = 'ph_' + Math.random().toString(36).slice(2, 10);
+  }
+
   socket.on('connect', () => {
     el('statusText').textContent = 'Securing connection…';
-    socket.emit('join-phone');
+    socket.emit('join-phone', { phoneId });
   });
 
   socket.on('assigned', ({ patient }) => {

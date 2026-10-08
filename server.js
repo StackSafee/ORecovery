@@ -67,6 +67,7 @@ function freshPatients() {
   return PATIENTS_SEED.map(p => ({
     ...p,
     claimedBy: null,
+    phoneId: null,
     responded: false,
     response: null,
   }));
@@ -109,16 +110,30 @@ io.on('connection', (socket) => {
     });
   });
 
-  socket.on('join-phone', () => {
+  socket.on('join-phone', (payload) => {
     if (!state.active) { socket.emit('no-case'); return; }
-    // Assign the next unclaimed, unresponded patient
-    const idx = state.patients.findIndex(p => !p.claimedBy && !p.responded);
-    if (idx === -1) { socket.emit('waitlist-full'); return; }
-    const p = state.patients[idx];
+    const phoneId = payload && payload.phoneId;
+
+    // First priority: has this phoneId already claimed a patient this session? Resume it.
+    let p = phoneId ? state.patients.find(x => x.phoneId === phoneId) : null;
+
+    // Otherwise assign a fresh unclaimed, unresponded patient
+    if (!p) {
+      const idx = state.patients.findIndex(x => !x.claimedBy && !x.phoneId && !x.responded);
+      if (idx === -1) { socket.emit('waitlist-full'); return; }
+      p = state.patients[idx];
+      if (phoneId) p.phoneId = phoneId;
+    }
+
+    const wasAlreadyClaimed = !!p.claimedBy;
     p.claimedBy = socket.id;
     socket.data.pid = p.pid;
     socket.emit('assigned', { patient: publicPatient(p) });
-    io.to('screen').emit('claimed', { pid: p.pid });
+
+    // Only tell the screen if this is a NEW claim, not a reconnect
+    if (!wasAlreadyClaimed) {
+      io.to('screen').emit('claimed', { pid: p.pid });
+    }
   });
 
   socket.on('phone-response', ({ response }) => {
