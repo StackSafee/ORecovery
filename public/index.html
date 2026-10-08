@@ -1392,14 +1392,28 @@
     border-color: var(--good);
     box-shadow: 0 0 0 2px color-mix(in srgb, var(--good) 20%, transparent);
     transform: scale(1.02);
+    animation: yesPop 0.5s ease-out;
+  }
+  @keyframes yesPop {
+    0% { transform: scale(1); background: var(--surface); }
+    50% { transform: scale(1.08); }
+    100% { transform: scale(1.02); background: var(--good-soft); }
   }
   body.pitch-mode .patient:has(.status-chip.no) {
-    opacity: 0.4;
     background: var(--bad-soft);
-    border-color: var(--bad-soft);
+    border-color: var(--bad);
+    opacity: 0.75;
+    animation: noShake 0.5s ease-out;
+  }
+  @keyframes noShake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-6px); }
+    40% { transform: translateX(6px); }
+    60% { transform: translateX(-4px); }
+    80% { transform: translateX(4px); }
   }
   body.pitch-mode .patient:has(.status-chip.timeout) {
-    opacity: 0.35;
+    opacity: 0.4;
   }
 
   /* Live phone frame — always visible in pitch mode */
@@ -3913,10 +3927,13 @@
     resetLocal();
   }
 
-  // Hook into existing confirmBooking to show pitch banner
+  // Hook into existing confirmBooking to show pitch banner + tell audience phones who won
   const _origConfirm = confirmBooking;
   confirmBooking = function(patient, overrideReason) {
     _origConfirm(patient, overrideReason);
+    if (socket && socket.connected && patient) {
+      socket.emit('confirm', { pid: patient.pid });
+    }
     if (document.body.classList.contains('pitch-mode') && caseStart) {
       showPitchBanner(patient, Date.now() - caseStart);
     }

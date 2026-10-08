@@ -178,6 +178,13 @@ io.on('connection', (socket) => {
     io.emit('reset');
   });
 
+  // Scheduler confirmed a booking — broadcast the winner to everyone
+  socket.on('confirm', ({ pid }) => {
+    const winner = state.patients.find(p => p.pid === pid);
+    if (!winner) return;
+    io.emit('result', { winnerPid: pid, winnerInitials: winner.initials });
+  });
+
   socket.on('disconnect', () => {
     // If a phone disconnects without responding, free up their slot
     const p = state.patients.find(x => x.claimedBy === socket.id);

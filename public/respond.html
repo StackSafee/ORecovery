@@ -294,9 +294,38 @@
   socket.on('assigned', ({ patient }) => {
     myPatient = patient;
     el('greeting').textContent = `Hello ${patient.initials.replace(/\./g,'')},`;
-    show('question');
-    // Haptic feedback if available
-    if (navigator.vibrate) navigator.vibrate([120, 80, 120]);
+    if (patient.responded) {
+      // User refreshed after answering — restore the answered state
+      renderAnswered(patient.response, patient);
+    } else {
+      show('question');
+      if (navigator.vibrate) navigator.vibrate([120, 80, 120]);
+    }
+  });
+
+  // Scheduler confirmed a booking — tell everyone the result
+  socket.on('result', ({ winnerPid, winnerInitials }) => {
+    if (!myPatient) return;
+    const won = winnerPid === myPatient.pid;
+    const yes = myPatient.response === 'yes';
+    show('message', `
+      <div class="icon" style="background:${won ? 'var(--good)' : 'var(--fg-subtle)'};color:#fff;width:80px;height:80px;">
+        <svg viewBox="0 0 24 24" width="40" height="40" fill="#fff">
+          ${won ? '<path d="M12 2l2.5 7h7.5l-6 4.5 2.3 7.5-6.3-4.6-6.3 4.6 2.3-7.5-6-4.5h7.5z"/>'
+                : '<path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/>'}
+        </svg>
+      </div>
+      <h3 style="font-size:${won ? 24 : 18}px;color:${won ? 'var(--good)' : 'var(--fg)'};">
+        ${won ? "You got the appointment!" : (yes ? "Someone else was selected" : "Appointment filled")}
+      </h3>
+      <p>${won
+        ? `Please arrive at RUH · OR 6 by 9:30 AM today. The scheduler will call you shortly to confirm details.`
+        : (yes ? "Thanks for responding so quickly. Someone else accepted the opening — your waitlist position is unchanged." : "Thank you for letting us know. Your scheduled surgery date is unchanged.")}</p>
+      <p style="font-size:12px;color:var(--fg-subtle);margin-top:18px;">
+        ${won ? 'Patient: ' : ''}${myPatient.pid}
+      </p>
+    `);
+    if (won && navigator.vibrate) navigator.vibrate([200, 100, 200, 100, 400]);
   });
 
   socket.on('no-case', () => {
@@ -327,22 +356,28 @@
 
   function respond(answer) {
     if (!myPatient) return;
+    myPatient.responded = true;
+    myPatient.response = answer;
     socket.emit('phone-response', { response: answer });
+    renderAnswered(answer, myPatient);
+    if (navigator.vibrate) navigator.vibrate(60);
+  }
+
+  function renderAnswered(answer, patient) {
     const yes = answer === 'yes';
     show('answered', `
-      <div class="icon ${yes ? '' : ''}">
+      <div class="icon">
         <svg viewBox="0 0 24 24" width="34" height="34" fill="#fff">
           ${yes ? '<path d="M9 16.2L4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/>' : '<path d="M3 11h18v2H3z"/>'}
         </svg>
       </div>
-      <h3>${yes ? 'Response recorded' : 'Response recorded'}</h3>
+      <h3>Response recorded</h3>
       <p>${yes
-        ? "You said you're available. Our scheduling team is reviewing responses from all eligible patients. If you're selected, we'll contact you within the hour to confirm."
+        ? "You said you're available. Our scheduling team is reviewing responses from all eligible patients. If you're selected, we'll let you know on this screen."
         : "You said you can't make it. Thank you for letting us know. Your scheduled surgery date is unchanged."}</p>
-      <p style="font-size:12px;color:var(--fg-subtle);margin-top:18px;">Patient reference: ${myPatient.pid}</p>
+      <p style="font-size:12px;color:var(--fg-subtle);margin-top:18px;">Patient reference: ${patient.pid}</p>
     `);
     el('answered').className = 'answered ' + (yes ? 'yes' : 'no');
-    if (navigator.vibrate) navigator.vibrate(60);
   }
 </script>
 </body>
