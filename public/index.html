@@ -3590,8 +3590,12 @@
       const p = currentPatientsOnScreen.find(x => x.pid === pid);
       if (!p) return;
       setPatientResponse(p, response, true, source || 'audience');
-      // Check if we should fire recommendation (all responded or near enough)
-      maybeShowRecommendation();
+      // If recommendation was already shown (empty), re-render now that a response arrived
+      if (recoShown && availablePatients.length > 0 && response === 'yes') {
+        renderRecommendation();
+      } else if (!recoShown) {
+        maybeShowRecommendation();
+      }
     });
     socket.on('mode-changed', ({ mode }) => {
       currentMode = mode;
@@ -3722,7 +3726,7 @@
 
   // Timer-based fallback recommendation (ensures reco shows even if few people responded)
   function startRecoTimeout() {
-    setTimeout(() => { if (!recoShown && state === 'opened') maybeShowRecommendation(); }, 12500);
+    setTimeout(() => { if (!recoShown && state === 'opened') maybeShowRecommendation(); }, 30000);
   }
 
   function resetLocal() {
