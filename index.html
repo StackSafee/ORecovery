@@ -1,4 +1,3 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>ORecover</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,11 +18,22 @@
     --fg: #0F1419;
     --fg-muted: #4A525C;
     --fg-subtle: #8690A0;
-    --accent: #0E6E42;
-    --accent-soft: #D5EBDC;
+    --accent: #0A5A37;
+    --accent-deep: #073D25;
+    --accent-soft: #D1E6D8;
     --accent-fg: #FFFFFF;
     --gold: #D9A017;
+    --gold-bright: #F0B220;
     --gold-soft: #FBF0D0;
+    --sidebar-bg: #0A3D29;
+    --sidebar-bg-top: #0E4A33;
+    --sidebar-fg: #E8F0EB;
+    --sidebar-fg-muted: #96B4A3;
+    --sidebar-section: #6E8E7D;
+    --sidebar-hover: rgba(255,255,255,0.06);
+    --sidebar-active-bg: rgba(255,255,255,0.09);
+    --sidebar-active-fg: #FFFFFF;
+    --sidebar-border: rgba(255,255,255,0.08);
     --good: #0A8554;
     --good-soft: #D7EFE2;
     --warn: #B8740C;
@@ -48,10 +58,12 @@
       --fg: #E6EAF0;
       --fg-muted: #9AA4B2;
       --fg-subtle: #6B7585;
-      --accent: #4FBF80;
-      --accent-soft: #0F3524;
+      --accent: #4CC586;
+      --accent-deep: #2E8858;
+      --accent-soft: #0D3A26;
       --accent-fg: #0B0F15;
       --gold: #E8B943;
+      --gold-bright: #F0C860;
       --gold-soft: #3C2E12;
       --good: #37B678;
       --good-soft: #0F3524;
@@ -61,6 +73,15 @@
       --bad-soft: #3B1620;
       --info: #5A9BE0;
       --info-soft: #142A3E;
+      --sidebar-bg: #0A2E1F;
+      --sidebar-bg-top: #0E3A28;
+      --sidebar-fg: #E8F0EB;
+      --sidebar-fg-muted: #86A392;
+      --sidebar-section: #5E7B6B;
+      --sidebar-hover: rgba(255,255,255,0.05);
+      --sidebar-active-bg: rgba(76, 197, 134, 0.14);
+      --sidebar-active-fg: #FFFFFF;
+      --sidebar-border: rgba(255,255,255,0.06);
       --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.35);
       --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.35), 0 6px 16px rgba(0, 0, 0, 0.45);
       --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.6);
@@ -77,11 +98,22 @@
     --fg: #E6EAF0;
     --fg-muted: #9AA4B2;
     --fg-subtle: #6B7585;
-    --accent: #4FBF80;
-    --accent-soft: #0F3524;
+    --accent: #4CC586;
+    --accent-deep: #2E8858;
+    --accent-soft: #0D3A26;
     --accent-fg: #0B0F15;
     --gold: #E8B943;
+    --gold-bright: #F0C860;
     --gold-soft: #3C2E12;
+    --sidebar-bg: #0A2E1F;
+    --sidebar-bg-top: #0E3A28;
+    --sidebar-fg: #E8F0EB;
+    --sidebar-fg-muted: #86A392;
+    --sidebar-section: #5E7B6B;
+    --sidebar-hover: rgba(255,255,255,0.05);
+    --sidebar-active-bg: rgba(76, 197, 134, 0.14);
+    --sidebar-active-fg: #FFFFFF;
+    --sidebar-border: rgba(255,255,255,0.06);
     --good: #37B678;
     --good-soft: #0F3524;
     --warn: #E0A24A;
@@ -123,18 +155,37 @@
     align-items: center;
     gap: 20px;
   }
+  /* Prairie horizon — thin green→gold strip under the top bar for brand identity */
+  .horizon {
+    position: sticky;
+    top: calc(55px + env(safe-area-inset-top, 0px));
+    z-index: 49;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent-deep) 0%, var(--accent) 35%, var(--gold) 65%, var(--accent) 90%, var(--accent-deep) 100%);
+  }
 
-  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; letter-spacing: -0.01em; }
+  .brand { display: flex; align-items: center; gap: 11px; font-weight: 700; font-size: 15px; letter-spacing: -0.01em; }
   .brand-mark {
-    min-width: 30px; height: 24px;
-    padding: 0 6px;
-    border-radius: 6px;
+    min-width: 36px; height: 30px;
+    padding: 0 8px;
+    border-radius: 7px;
     background: var(--accent);
     display: grid; place-items: center;
     color: var(--accent-fg);
-    font-weight: 800; font-size: 11px;
-    letter-spacing: 0.02em;
-    border-bottom: 2px solid var(--gold);
+    font-weight: 800; font-size: 12px;
+    letter-spacing: 0.03em;
+    border-bottom: 3px solid var(--gold);
+    box-shadow: inset 0 -1px 0 rgba(0,0,0,0.1), 0 1px 2px rgba(10, 90, 55, 0.25);
+  }
+  .brand-text { display: flex; flex-direction: column; line-height: 1; }
+  .brand-text .name { font-size: 15px; letter-spacing: -0.01em; }
+  .brand-text .tag {
+    font-size: 9.5px;
+    font-weight: 600;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-top: 3px;
   }
 
   .topbar-divider { width: 1px; height: 20px; background: var(--border); }
@@ -184,36 +235,72 @@
   }
 
   .sidebar {
-    background: var(--surface);
-    border-right: 1px solid var(--border);
+    background: linear-gradient(180deg, var(--sidebar-bg-top) 0%, var(--sidebar-bg) 100%);
+    border-right: 1px solid var(--sidebar-border);
     padding: 20px 12px;
     display: flex; flex-direction: column; gap: 2px;
+    color: var(--sidebar-fg);
+    position: relative;
+  }
+  /* Gold accent strip along the right edge of the sidebar — subtle brand signature */
+  .sidebar::after {
+    content: '';
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 2px;
+    background: linear-gradient(180deg, transparent 0%, var(--gold) 30%, var(--gold) 70%, transparent 100%);
+    opacity: 0.35;
   }
 
   .nav-section {
-    font-size: 11px; font-weight: 600;
-    letter-spacing: 0.06em; text-transform: uppercase;
-    color: var(--fg-subtle); padding: 8px 10px 4px;
+    font-size: 10.5px; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--sidebar-section); padding: 10px 10px 4px;
   }
 
   .nav-item {
     display: flex; align-items: center; gap: 10px;
-    padding: 7px 10px; border-radius: 6px;
-    color: var(--fg-muted); cursor: pointer;
+    padding: 8px 10px; border-radius: 6px;
+    color: var(--sidebar-fg-muted); cursor: pointer;
     font-size: 13.5px; font-weight: 500;
     user-select: none;
+    position: relative;
+    transition: color 0.15s, background 0.15s;
   }
-  .nav-item:hover { background: var(--surface-2); color: var(--fg); }
+  .nav-item:hover { background: var(--sidebar-hover); color: var(--sidebar-fg); }
   .nav-item.active {
-    background: var(--accent-soft); color: var(--accent); font-weight: 600;
+    background: var(--sidebar-active-bg);
+    color: var(--sidebar-active-fg);
+    font-weight: 600;
+  }
+  .nav-item.active::before {
+    content: '';
+    position: absolute;
+    left: -12px; top: 6px; bottom: 6px;
+    width: 3px;
+    background: var(--gold);
+    border-radius: 0 2px 2px 0;
   }
   .nav-item .count {
     margin-left: auto;
-    font-size: 11px; font-weight: 600;
-    background: var(--accent); color: var(--accent-fg);
-    padding: 1px 6px; border-radius: 999px;
+    font-size: 10.5px; font-weight: 700;
+    background: var(--gold); color: #0A2E1F;
+    padding: 1px 7px; border-radius: 999px;
     min-width: 18px; text-align: center;
+    letter-spacing: 0.02em;
   }
+  .nav-item svg { opacity: 0.75; }
+  .nav-item.active svg { opacity: 1; }
+  /* Sidebar footer brand lockup */
+  .sidebar-foot {
+    margin-top: auto;
+    padding: 14px 10px 4px;
+    border-top: 1px solid var(--sidebar-border);
+    font-size: 10.5px;
+    color: var(--sidebar-section);
+    line-height: 1.5;
+  }
+  .sidebar-foot b { color: var(--sidebar-fg-muted); font-weight: 600; }
 
   /* Main */
   main { padding: 20px 24px 48px; min-width: 0; }
@@ -262,6 +349,13 @@
     padding: 14px 16px;
     position: relative;
     overflow: hidden;
+  }
+  .metric:first-child::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--gold) 70%, var(--accent));
   }
   .metric .label {
     font-size: 11.5px; text-transform: uppercase;
@@ -314,14 +408,21 @@
   .case-ribbon {
     background: linear-gradient(90deg, var(--accent-soft), transparent 60%);
     border: 1px solid var(--border);
+    border-left: 4px solid var(--accent);
     border-radius: 10px;
-    padding: 14px 16px;
+    padding: 14px 16px 14px 20px;
     display: flex; align-items: center; gap: 14px;
     margin-bottom: 14px;
     position: relative;
   }
-  .case-ribbon.idle { background: var(--surface); }
-  .case-ribbon.filled { background: linear-gradient(90deg, var(--good-soft), transparent 60%); }
+  .case-ribbon.idle {
+    background: var(--surface);
+    border-left-color: var(--border-strong);
+  }
+  .case-ribbon.filled {
+    background: linear-gradient(90deg, var(--good-soft), transparent 60%);
+    border-left-color: var(--good);
+  }
 
   .ribbon-dot {
     width: 10px; height: 10px; border-radius: 50%;
@@ -1067,7 +1168,10 @@
 <header class="topbar">
   <div class="brand">
     <div class="brand-mark">OR</div>
-    <span>ORecover</span>
+    <div class="brand-text">
+      <span class="name">ORecover</span>
+      <span class="tag">Saskatchewan · Surgical</span>
+    </div>
   </div>
   <div class="topbar-divider"></div>
   <div class="hospital-pick" title="Hospital selector (demo)">
@@ -1085,6 +1189,7 @@
     </div>
   </div>
 </header>
+<div class="horizon" aria-hidden="true"></div>
 
 <div class="shell">
   <nav class="sidebar">
@@ -1115,6 +1220,11 @@
     <div class="nav-item" data-view="audit">
       <svg class="ico" viewBox="0 0 20 20"><path d="M10 2a4 4 0 00-4 4v2H5a1 1 0 00-1 1v8a1 1 0 001 1h10a1 1 0 001-1V9a1 1 0 00-1-1h-1V6a4 4 0 00-4-4z"/></svg>
       Access & audit
+    </div>
+    <div class="sidebar-foot">
+      <b>Royal University Hospital</b><br>
+      Saskatoon · SHA Region 6<br>
+      <span style="color: var(--gold); letter-spacing: 0.04em;">v1.0 · Pilot</span>
     </div>
   </nav>
 
@@ -2617,5 +2727,3 @@
     document.getElementById('lastSync').textContent = `${syncSec} sec ago`;
   }, 1000);
 </script>
-
-</body></html>
