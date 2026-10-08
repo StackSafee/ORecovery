@@ -1890,6 +1890,10 @@
             Simulated
           </button>
         </div>
+        <button class="btn btn-ghost" id="rankNowBtn" title="Rank available patients now and show the recommendation">
+          <svg class="ico" viewBox="0 0 20 20" fill="currentColor"><path d="M3 17h14v1H3zm2-4h2v3H5zm4-5h2v8H9zm4-3h2v11h-2z"/></svg>
+          Rank now
+        </button>
         <button class="btn btn-ghost" id="showQrBtn" title="Show the audience QR code">
           <svg class="ico" viewBox="0 0 20 20" fill="currentColor"><path d="M2 2h7v7H2zm1.5 1.5v4h4v-4zM4 4h2v2H4zm7-2h7v7h-7zm1.5 1.5v4h4v-4zM13 4h2v2h-2zM2 11h7v7H2zm1.5 1.5v4h4v-4zM4 13h2v2H4zm7-2h2v2h-2zm2 2h2v2h-2zm-2 2h2v2h-2zm4 0h2v2h-2zm-2 2h2v2h-2zm2 0h2v2h-2z"/></svg>
           Show QR
@@ -3727,7 +3731,16 @@
 
   // Timer-based fallback recommendation (ensures reco shows even if few people responded)
   function startRecoTimeout() {
-    setTimeout(() => { if (!recoShown && state === 'opened') maybeShowRecommendation(); }, 30000);
+    setTimeout(() => {
+      if (recoShown || state !== 'opened') return;
+      // If nobody has responded yet, DON'T show the awkward "no available" screen.
+      // Keep the demo waiting — user can flip to Simulated or click Rank now.
+      if (respondedPids.size === 0) {
+        showToast('No responses yet — try switching to Simulated, or wait for the audience.');
+        return;
+      }
+      maybeShowRecommendation();
+    }, 90000);
   }
 
   function resetLocal() {
@@ -3783,6 +3796,31 @@
   }
   document.getElementById('qrDismiss').addEventListener('click', hideQR);
   document.getElementById('showQrBtn').addEventListener('click', showQR);
+  document.getElementById('rankNowBtn').addEventListener('click', () => {
+    if (state !== 'opened') { showToast('Trigger a cancellation first.'); return; }
+    if (respondedPids.size === 0) {
+      showToast('Nobody has responded yet. Flip to Simulated or wait.');
+      return;
+    }
+    hideQR();
+    recoShown = true;
+    pushStream({ time: clockFromStart(Date.now() - caseStart), kind: 'sys', body: `<b>Scheduler-forced ranking</b> · ${availablePatients.length} available of ${respondedPids.size} responded` });
+    document.getElementById('recoPanel').innerHTML = `
+      <div class="reco-waiting"><div class="spinner"></div>Ranking ${availablePatients.length} available patients…</div>
+    `;
+    setTimeout(() => {
+      if (availablePatients.length === 0) {
+        document.getElementById('recoPanel').innerHTML = `
+          <div class="success-overlay">
+            <div style="font-size:14px;color:var(--bad);font-weight:600;margin-bottom:6px;">No available patients</div>
+            <div style="font-size:12.5px;color:var(--fg-muted);">All responses were "not available". Case will be re-queued; scheduler alerted at 15-min mark.</div>
+          </div>
+        `;
+        return;
+      }
+      renderRecommendation();
+    }, 700);
+  });
 
   // ---------- Live phone (pitch mode) ----------
   function updateLivePhone(patient) {
