@@ -1273,8 +1273,14 @@
   body.pitch-mode .theme-toggle,
   body.pitch-mode .footnote,
   body.pitch-mode .made-with-love,
-  body.pitch-mode .table-wrap,
-  body.pitch-mode .page-header { display: none; }
+  body.pitch-mode .table-wrap { display: none; }
+
+  /* Keep the action buttons visible in pitch mode, hide only the title text */
+  body.pitch-mode .page-header { justify-content: flex-end; margin-bottom: 16px; }
+  body.pitch-mode .page-header > div:first-child { display: none; }
+  body.pitch-mode .page-header .btn,
+  body.pitch-mode .page-header .mode-switch { font-size: 14px; }
+  body.pitch-mode .page-header .btn-primary { padding: 12px 18px; }
 
   body.pitch-mode main { padding: 24px 32px 32px; }
   body.pitch-mode .brand-logo { height: 44px; }
