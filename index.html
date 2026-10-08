@@ -1,0 +1,2621 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>ORecover</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout concept: hospital operations console. Sidebar views switch the main stage.
+     Live case view is the hero: eligible patients → outreach → recommendation. Email and
+     patient-response modals prove the patient-facing side. Semantic status color carries
+     the signal; a quiet SK-green accent with a gold underline carries the brand. */
+
+  :root {
+    --bg: #F6F7F9;
+    --surface: #FFFFFF;
+    --surface-2: #F0F2F5;
+    --surface-hover: #EBEEF2;
+    --border: #E2E5EA;
+    --border-strong: #CBD0D7;
+    --fg: #0F1419;
+    --fg-muted: #4A525C;
+    --fg-subtle: #8690A0;
+    --accent: #0E6E42;
+    --accent-soft: #D5EBDC;
+    --accent-fg: #FFFFFF;
+    --gold: #D9A017;
+    --gold-soft: #FBF0D0;
+    --good: #0A8554;
+    --good-soft: #D7EFE2;
+    --warn: #B8740C;
+    --warn-soft: #FBECCB;
+    --bad: #B42D44;
+    --bad-soft: #FADDDF;
+    --info: #2563A6;
+    --info-soft: #D8E6F3;
+    --shadow-sm: 0 1px 2px rgba(15, 20, 25, 0.04), 0 1px 3px rgba(15, 20, 25, 0.06);
+    --shadow-md: 0 2px 6px rgba(15, 20, 25, 0.06), 0 6px 16px rgba(15, 20, 25, 0.08);
+    --shadow-lg: 0 10px 40px rgba(15, 20, 25, 0.18);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0B0F15;
+      --surface: #141A22;
+      --surface-2: #1B222C;
+      --surface-hover: #222A35;
+      --border: #2A333F;
+      --border-strong: #3B4654;
+      --fg: #E6EAF0;
+      --fg-muted: #9AA4B2;
+      --fg-subtle: #6B7585;
+      --accent: #4FBF80;
+      --accent-soft: #0F3524;
+      --accent-fg: #0B0F15;
+      --gold: #E8B943;
+      --gold-soft: #3C2E12;
+      --good: #37B678;
+      --good-soft: #0F3524;
+      --warn: #E0A24A;
+      --warn-soft: #3C2E12;
+      --bad: #E66177;
+      --bad-soft: #3B1620;
+      --info: #5A9BE0;
+      --info-soft: #142A3E;
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.35);
+      --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.35), 0 6px 16px rgba(0, 0, 0, 0.45);
+      --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.6);
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0B0F15;
+    --surface: #141A22;
+    --surface-2: #1B222C;
+    --surface-hover: #222A35;
+    --border: #2A333F;
+    --border-strong: #3B4654;
+    --fg: #E6EAF0;
+    --fg-muted: #9AA4B2;
+    --fg-subtle: #6B7585;
+    --accent: #4FBF80;
+    --accent-soft: #0F3524;
+    --accent-fg: #0B0F15;
+    --gold: #E8B943;
+    --gold-soft: #3C2E12;
+    --good: #37B678;
+    --good-soft: #0F3524;
+    --warn: #E0A24A;
+    --warn-soft: #3C2E12;
+    --bad: #E66177;
+    --bad-soft: #3B1620;
+    --info: #5A9BE0;
+    --info-soft: #142A3E;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3), 0 1px 3px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 2px 6px rgba(0, 0, 0, 0.35), 0 6px 16px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 10px 40px rgba(0, 0, 0, 0.6);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .mono { font-family: 'JetBrains Mono', ui-monospace, Menlo, monospace; }
+
+  /* Top bar */
+  .topbar {
+    position: sticky;
+    top: env(safe-area-inset-top, 0px);
+    z-index: 50;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 20px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; letter-spacing: -0.01em; }
+  .brand-mark {
+    min-width: 30px; height: 24px;
+    padding: 0 6px;
+    border-radius: 6px;
+    background: var(--accent);
+    display: grid; place-items: center;
+    color: var(--accent-fg);
+    font-weight: 800; font-size: 11px;
+    letter-spacing: 0.02em;
+    border-bottom: 2px solid var(--gold);
+  }
+
+  .topbar-divider { width: 1px; height: 20px; background: var(--border); }
+
+  .hospital-pick {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 13px; color: var(--fg-muted);
+    cursor: pointer; padding: 6px 10px; border-radius: 6px;
+  }
+  .hospital-pick:hover { background: var(--surface-2); color: var(--fg); }
+  .hospital-pick .label-tag {
+    background: var(--surface-2); color: var(--fg-muted);
+    padding: 2px 7px; border-radius: 4px; font-size: 11px; font-weight: 500;
+  }
+
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 14px; }
+
+  .theme-toggle {
+    background: none; border: 1px solid var(--border);
+    color: var(--fg-muted);
+    width: 32px; height: 32px; border-radius: 6px;
+    cursor: pointer; display: grid; place-items: center;
+  }
+  .theme-toggle:hover { background: var(--surface-2); color: var(--fg); }
+
+  .user-chip {
+    display: flex; align-items: center; gap: 10px;
+    padding: 4px 10px 4px 4px; border-radius: 999px;
+    background: var(--surface-2); font-size: 13px;
+  }
+  .user-chip .avatar {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--info-soft); color: var(--info);
+    display: grid; place-items: center;
+    font-weight: 600; font-size: 11px;
+  }
+
+  /* App shell */
+  .shell {
+    display: grid;
+    grid-template-columns: 220px 1fr;
+    min-height: calc(100vh - 55px);
+  }
+  @media (max-width: 900px) {
+    .shell { grid-template-columns: 1fr; }
+    .sidebar { display: none; }
+  }
+
+  .sidebar {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 20px 12px;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+
+  .nav-section {
+    font-size: 11px; font-weight: 600;
+    letter-spacing: 0.06em; text-transform: uppercase;
+    color: var(--fg-subtle); padding: 8px 10px 4px;
+  }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 10px; border-radius: 6px;
+    color: var(--fg-muted); cursor: pointer;
+    font-size: 13.5px; font-weight: 500;
+    user-select: none;
+  }
+  .nav-item:hover { background: var(--surface-2); color: var(--fg); }
+  .nav-item.active {
+    background: var(--accent-soft); color: var(--accent); font-weight: 600;
+  }
+  .nav-item .count {
+    margin-left: auto;
+    font-size: 11px; font-weight: 600;
+    background: var(--accent); color: var(--accent-fg);
+    padding: 1px 6px; border-radius: 999px;
+    min-width: 18px; text-align: center;
+  }
+
+  /* Main */
+  main { padding: 20px 24px 48px; min-width: 0; }
+
+  .view[hidden] { display: none !important; }
+
+  .page-header {
+    display: flex; align-items: flex-end; justify-content: space-between;
+    gap: 20px; margin-bottom: 20px; flex-wrap: wrap;
+  }
+
+  .page-title { font-size: 20px; font-weight: 700; letter-spacing: -0.01em; margin: 0 0 2px; }
+  .page-subtitle { color: var(--fg-muted); font-size: 13.5px; margin: 0; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 9px 14px; border-radius: 7px;
+    font-size: 13.5px; font-weight: 600;
+    cursor: pointer; border: 1px solid transparent;
+    font-family: inherit;
+    transition: transform 0.05s;
+  }
+  .btn:active { transform: translateY(1px); }
+  .btn-primary { background: var(--accent); color: var(--accent-fg); }
+  .btn-primary:hover { filter: brightness(1.07); }
+  .btn-ghost { background: var(--surface); color: var(--fg); border-color: var(--border); }
+  .btn-ghost:hover { background: var(--surface-2); }
+  .btn-success { background: var(--good); color: #fff; }
+  .btn-success:hover { filter: brightness(1.05); }
+  .btn-primary:disabled, .btn-success:disabled, .btn-ghost:disabled {
+    opacity: 0.5; cursor: not-allowed;
+  }
+  .btn-sm { padding: 6px 10px; font-size: 12.5px; }
+
+  /* Metric strip */
+  .metrics {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 12px; margin-bottom: 20px;
+  }
+  @media (max-width: 760px) { .metrics { grid-template-columns: repeat(2, 1fr); } }
+
+  .metric {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    position: relative;
+    overflow: hidden;
+  }
+  .metric .label {
+    font-size: 11.5px; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--fg-subtle);
+    font-weight: 600; margin-bottom: 6px;
+  }
+  .metric .value {
+    font-size: 24px; font-weight: 700;
+    letter-spacing: -0.015em; line-height: 1.1;
+  }
+  .metric .delta {
+    font-size: 11.5px; margin-top: 4px; color: var(--fg-muted);
+  }
+  .metric .delta.up { color: var(--good); }
+  .metric .spark {
+    position: absolute; right: 10px; bottom: 10px;
+    width: 70px; height: 24px;
+  }
+
+  /* Case view */
+  .case-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr) minmax(0, 0.95fr);
+    gap: 14px;
+  }
+  @media (max-width: 1180px) { .case-grid { grid-template-columns: 1fr; } }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    min-width: 0;
+  }
+
+  .panel-header {
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .panel-title { font-weight: 600; font-size: 13.5px; }
+  .panel-sub { font-size: 12px; color: var(--fg-subtle); }
+  .panel-body {
+    padding: 10px 10px;
+    overflow-y: auto;
+    max-height: 540px;
+  }
+
+  .case-ribbon {
+    background: linear-gradient(90deg, var(--accent-soft), transparent 60%);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px 16px;
+    display: flex; align-items: center; gap: 14px;
+    margin-bottom: 14px;
+    position: relative;
+  }
+  .case-ribbon.idle { background: var(--surface); }
+  .case-ribbon.filled { background: linear-gradient(90deg, var(--good-soft), transparent 60%); }
+
+  .ribbon-dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: var(--accent);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent);
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+  .case-ribbon.idle .ribbon-dot {
+    background: var(--fg-subtle); box-shadow: none; animation: none;
+  }
+  .case-ribbon.filled .ribbon-dot {
+    background: var(--good);
+    box-shadow: 0 0 0 4px color-mix(in srgb, var(--good) 22%, transparent);
+    animation: none;
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
+    50% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--accent) 10%, transparent); }
+  }
+
+  .ribbon-headline { font-weight: 600; font-size: 14px; }
+  .ribbon-sub { font-size: 12.5px; color: var(--fg-muted); margin-top: 2px; }
+  .ribbon-timer {
+    margin-left: auto; text-align: right;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 20px; font-weight: 500;
+    color: var(--fg); letter-spacing: -0.01em;
+  }
+  .ribbon-timer-label {
+    font-size: 11px; color: var(--fg-subtle);
+    letter-spacing: 0.05em; text-transform: uppercase;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* Patient row */
+  .patient {
+    display: grid;
+    grid-template-columns: 36px 1fr auto;
+    align-items: center; gap: 10px;
+    padding: 10px 10px;
+    border-radius: 7px;
+    border: 1px solid transparent;
+    transition: background 0.15s;
+  }
+  .patient:hover { background: var(--surface-2); }
+  .patient + .patient { border-top: 1px solid var(--border); border-radius: 0; }
+  .patient:first-child { border-top: none; }
+
+  .pid {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--surface-2);
+    display: grid; place-items: center;
+    font-weight: 600; font-size: 12.5px;
+    color: var(--fg-muted);
+    flex-shrink: 0;
+  }
+
+  .pname {
+    font-weight: 600; font-size: 13.5px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .pmeta {
+    font-size: 12px; color: var(--fg-muted);
+    margin-top: 2px;
+    display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+  }
+  .pmeta .dot { color: var(--fg-subtle); }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 2px 7px; border-radius: 4px;
+    font-size: 11px; font-weight: 600; line-height: 1.4;
+    white-space: nowrap;
+  }
+  .chip.priority-1 { background: var(--bad-soft); color: var(--bad); }
+  .chip.priority-2 { background: var(--gold-soft); color: var(--gold); }
+  .chip.priority-3 { background: var(--info-soft); color: var(--info); }
+  .chip.priority-4 { background: var(--surface-2); color: var(--fg-muted); }
+
+  .status-chip {
+    padding: 3px 8px; border-radius: 999px;
+    font-size: 11px; font-weight: 600;
+    display: inline-flex; align-items: center; gap: 5px;
+    white-space: nowrap;
+  }
+  .status-chip.pending { background: var(--surface-2); color: var(--fg-subtle); }
+  .status-chip.contacted { background: var(--info-soft); color: var(--info); }
+  .status-chip.yes { background: var(--good-soft); color: var(--good); }
+  .status-chip.no { background: var(--bad-soft); color: var(--bad); }
+  .status-chip.timeout { background: var(--surface-2); color: var(--fg-subtle); font-style: italic; }
+
+  .send-icons { display: flex; gap: 4px; opacity: 0; transition: opacity 0.3s; }
+  .send-icons.visible { opacity: 1; }
+  .send-icon {
+    width: 20px; height: 20px;
+    border-radius: 4px;
+    background: var(--accent-soft); color: var(--accent);
+    display: grid; place-items: center;
+    font-size: 10px;
+  }
+  .send-icon.flash { animation: flash 0.6s ease-out; }
+  @keyframes flash {
+    0% { transform: scale(1); background: var(--accent); color: var(--accent-fg); }
+    100% { transform: scale(1); background: var(--accent-soft); color: var(--accent); }
+  }
+
+  .view-btn {
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--fg-muted);
+    width: 26px; height: 26px;
+    border-radius: 5px;
+    cursor: pointer;
+    display: grid; place-items: center;
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .view-btn.visible { opacity: 1; }
+  .view-btn:hover { background: var(--surface-2); color: var(--fg); }
+
+  /* Response stream */
+  .stream-entry {
+    display: flex; align-items: flex-start; gap: 10px;
+    padding: 9px 10px;
+    animation: slideIn 0.3s ease-out;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-4px); }
+    to { opacity: 1; transform: none; }
+  }
+  .stream-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--fg-subtle);
+    margin-top: 2px; min-width: 48px; flex-shrink: 0;
+  }
+  .stream-icon {
+    width: 20px; height: 20px; border-radius: 50%;
+    display: grid; place-items: center;
+    flex-shrink: 0; margin-top: 1px;
+  }
+  .stream-icon.sys { background: var(--info-soft); color: var(--info); }
+  .stream-icon.yes { background: var(--good-soft); color: var(--good); }
+  .stream-icon.no { background: var(--bad-soft); color: var(--bad); }
+  .stream-icon.send { background: var(--accent-soft); color: var(--accent); }
+  .stream-body { flex: 1; min-width: 0; font-size: 13px; }
+  .stream-body b { font-weight: 600; }
+  .stream-body .mono { font-size: 12.5px; }
+
+  .stream-empty {
+    padding: 30px 20px; text-align: center;
+    color: var(--fg-subtle); font-size: 13px;
+  }
+
+  /* Recommendation panel */
+  .reco-waiting {
+    padding: 30px 20px; text-align: center;
+    color: var(--fg-subtle);
+  }
+  .reco-waiting .spinner {
+    width: 24px; height: 24px;
+    border: 2.5px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    margin: 0 auto 14px;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .reco-card { padding: 16px; }
+
+  .reco-label {
+    font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.06em; font-weight: 600;
+    color: var(--good);
+    display: inline-flex; align-items: center; gap: 6px;
+    margin-bottom: 10px;
+  }
+  .reco-primary {
+    display: flex; align-items: center; gap: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px dashed var(--border);
+    margin-bottom: 12px;
+  }
+  .reco-primary .pid {
+    width: 44px; height: 44px;
+    background: var(--good-soft); color: var(--good);
+    font-size: 14px;
+  }
+  .reco-primary .pname { font-size: 16px; }
+
+  .reasoning { font-size: 12.5px; color: var(--fg-muted); line-height: 1.65; }
+  .reasoning ol { padding-left: 20px; margin: 8px 0 14px; }
+  .reasoning ol li { margin-bottom: 3px; }
+  .reasoning b { color: var(--fg); }
+
+  .reco-actions { display: flex; gap: 8px; margin-top: 14px; }
+  .reco-actions .btn { flex: 1; }
+
+  .runner-up {
+    margin-top: 14px; padding-top: 12px;
+    border-top: 1px solid var(--border);
+    font-size: 12px; color: var(--fg-muted);
+  }
+  .runner-up-label {
+    font-size: 11px; text-transform: uppercase;
+    letter-spacing: 0.06em; font-weight: 600;
+    color: var(--fg-subtle); margin-bottom: 6px;
+  }
+
+  .override-link {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12.5px; font-weight: 500;
+    color: var(--info); cursor: pointer;
+    margin-top: 10px;
+    user-select: none;
+  }
+  .override-link:hover { text-decoration: underline; }
+
+  /* Override picker */
+  .override-list { margin-top: 10px; }
+  .override-row {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    gap: 10px; align-items: center;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    margin-bottom: 6px;
+    cursor: pointer;
+  }
+  .override-row:hover { background: var(--surface-2); }
+  .override-row.selected {
+    border-color: var(--accent);
+    background: var(--accent-soft);
+  }
+  .override-row input[type="radio"] { accent-color: var(--accent); }
+  .override-reason {
+    width: 100%;
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--fg);
+    font-family: inherit; font-size: 13px;
+    margin-top: 8px;
+  }
+  .override-reason:focus {
+    outline: 2px solid var(--accent);
+    outline-offset: -1px;
+    border-color: var(--accent);
+  }
+
+  /* Recoveries table */
+  .table-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow-x: auto;
+  }
+  .data-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 640px; }
+  .data-table th {
+    text-align: left;
+    font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.05em;
+    font-weight: 600; color: var(--fg-subtle);
+    padding: 10px 14px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 0;
+  }
+  .data-table td { padding: 10px 14px; border-top: 1px solid var(--border); }
+  .data-table tr:first-child td { border-top: none; }
+  .data-table tr:hover td { background: var(--surface-2); }
+  .data-table .mono { font-size: 12px; color: var(--fg-muted); }
+
+  /* Success state */
+  .success-overlay { padding: 20px; text-align: center; animation: fadeIn 0.4s; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .success-icon {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: var(--good); color: #fff;
+    display: grid; place-items: center;
+    margin: 0 auto 14px; font-size: 24px;
+    animation: pop 0.5s cubic-bezier(0.18, 1.4, 0.5, 1);
+  }
+  @keyframes pop { 0% { transform: scale(0.5); } 100% { transform: scale(1); } }
+  .success-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .success-sub { font-size: 13px; color: var(--fg-muted); }
+
+  /* Footer */
+  .footnote {
+    margin-top: 24px;
+    padding: 12px 16px;
+    background: var(--warn-soft);
+    border: 1px solid color-mix(in srgb, var(--warn) 25%, transparent);
+    border-radius: 8px;
+    font-size: 12.5px; color: var(--fg);
+    display: flex; align-items: flex-start; gap: 10px;
+  }
+  .footnote strong { color: var(--warn); }
+
+  /* Tabs within views */
+  .filter-bar {
+    display: flex; gap: 6px; flex-wrap: wrap;
+    margin-bottom: 14px;
+  }
+  .filter-chip {
+    padding: 5px 11px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    font-size: 12.5px; font-weight: 500;
+    color: var(--fg-muted); cursor: pointer;
+  }
+  .filter-chip:hover { background: var(--surface-2); color: var(--fg); }
+  .filter-chip.active {
+    background: var(--accent-soft);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .filter-chip .count {
+    margin-left: 6px;
+    font-size: 11px; opacity: 0.75;
+  }
+
+  /* Rules engine display */
+  .rules-doc {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px 28px;
+  }
+  .rules-doc .policy-id {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    color: var(--fg-subtle);
+    letter-spacing: 0.03em;
+    margin-bottom: 6px;
+  }
+  .rules-doc h2 {
+    font-size: 18px; margin: 0 0 4px;
+    font-weight: 700; letter-spacing: -0.01em;
+  }
+  .rules-doc .meta {
+    font-size: 12.5px; color: var(--fg-muted);
+    margin-bottom: 22px;
+    display: flex; gap: 16px; flex-wrap: wrap;
+  }
+  .rule-stack {
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .rule-card {
+    display: grid;
+    grid-template-columns: 36px 1fr;
+    gap: 14px;
+    padding: 14px 16px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg);
+  }
+  .rule-num {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: var(--accent); color: var(--accent-fg);
+    display: grid; place-items: center;
+    font-weight: 700; font-size: 14px;
+  }
+  .rule-title { font-weight: 600; font-size: 14px; margin-bottom: 2px; }
+  .rule-desc { font-size: 12.5px; color: var(--fg-muted); line-height: 1.6; }
+  .rule-code {
+    margin-top: 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11.5px;
+    background: var(--surface);
+    padding: 6px 10px;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    color: var(--fg);
+    display: inline-block;
+  }
+
+  /* Reports chart */
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+  }
+  .chart-title {
+    font-size: 13px; font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .chart-sub {
+    font-size: 12px; color: var(--fg-subtle);
+    margin-bottom: 16px;
+  }
+  .bar-chart { display: block; width: 100%; height: auto; }
+
+  /* Integration cards */
+  .integration-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 12px;
+  }
+  .integ-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+  }
+  .integ-head {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 8px;
+  }
+  .integ-logo {
+    width: 36px; height: 36px;
+    border-radius: 7px;
+    background: var(--surface-2);
+    display: grid; place-items: center;
+    color: var(--fg-muted);
+    font-weight: 700;
+  }
+  .integ-name { font-weight: 600; font-size: 14px; }
+  .integ-status {
+    font-size: 11.5px; color: var(--good);
+    display: flex; align-items: center; gap: 5px;
+  }
+  .integ-status .dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--good);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--good) 20%, transparent);
+  }
+  .integ-desc { font-size: 12.5px; color: var(--fg-muted); line-height: 1.55; margin-bottom: 10px; }
+  .integ-stats {
+    display: flex; gap: 16px;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    font-size: 12px; color: var(--fg-muted);
+  }
+  .integ-stats b { color: var(--fg); font-weight: 600; }
+
+  /* Modal */
+  .modal-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(0, 0, 0, 0.52);
+    display: grid; place-items: center;
+    z-index: 100;
+    padding: 20px;
+    animation: fadeIn 0.2s;
+  }
+  .modal-backdrop[hidden] { display: none !important; }
+  .modal {
+    background: var(--bg);
+    border-radius: 12px;
+    box-shadow: var(--shadow-lg);
+    max-width: 720px; width: 100%;
+    max-height: 92vh;
+    overflow-y: auto;
+    animation: modalIn 0.25s cubic-bezier(0.18, 1.1, 0.5, 1);
+  }
+  @keyframes modalIn {
+    from { opacity: 0; transform: translateY(10px) scale(0.98); }
+    to { opacity: 1; transform: none; }
+  }
+  .modal-head {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px;
+    background: var(--surface);
+    border-radius: 12px 12px 0 0;
+  }
+  .modal-title { font-weight: 600; font-size: 15px; }
+  .modal-close {
+    margin-left: auto;
+    background: none; border: none;
+    color: var(--fg-muted); cursor: pointer;
+    width: 28px; height: 28px; border-radius: 5px;
+    display: grid; place-items: center;
+    font-size: 18px;
+  }
+  .modal-close:hover { background: var(--surface-2); color: var(--fg); }
+  .modal-body { padding: 0; background: var(--bg); }
+
+  .modal-tabs {
+    display: flex; gap: 2px;
+    padding: 10px 16px 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+  .modal-tab {
+    padding: 8px 14px;
+    font-size: 13px; font-weight: 500;
+    cursor: pointer;
+    color: var(--fg-muted);
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+  }
+  .modal-tab:hover { color: var(--fg); }
+  .modal-tab.active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+    font-weight: 600;
+  }
+
+  /* Email preview */
+  .email-frame {
+    background: #ffffff;
+    color: #1a1a1a;
+    margin: 20px;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+    font-family: 'Inter', -apple-system, sans-serif;
+  }
+  .email-head {
+    background: #f6f8fa;
+    padding: 10px 16px;
+    border-bottom: 1px solid #e4e7eb;
+    font-size: 12px;
+    color: #4a5568;
+  }
+  .email-head .field { margin-bottom: 2px; }
+  .email-head b { color: #1a1a1a; }
+  .email-body { padding: 24px 28px; font-size: 14px; line-height: 1.65; color: #1a1a1a; }
+  .email-body .logo-bar {
+    background: #0E6E42;
+    border-bottom: 3px solid #D9A017;
+    color: #fff;
+    padding: 10px 16px;
+    margin: -24px -28px 20px;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 0.03em;
+  }
+  .email-body h3 { font-size: 17px; margin: 0 0 12px; color: #0a1a2a; font-weight: 700; }
+  .email-body p { margin: 0 0 12px; }
+  .email-body .procedure-box {
+    background: #f6f8fa;
+    border-left: 3px solid #0E6E42;
+    padding: 12px 14px;
+    margin: 16px 0;
+    font-size: 13.5px;
+    border-radius: 0 6px 6px 0;
+  }
+  .email-body .procedure-box div { margin-bottom: 2px; }
+  .email-body .procedure-box b { color: #0a1a2a; }
+  .email-cta {
+    display: inline-block;
+    background: #0E6E42; color: #fff;
+    padding: 11px 24px; border-radius: 6px;
+    font-weight: 600; font-size: 14px;
+    text-decoration: none;
+    margin: 10px 0;
+    cursor: pointer;
+    border-bottom: 2px solid #D9A017;
+  }
+  .email-footer {
+    background: #f6f8fa;
+    padding: 14px 28px;
+    font-size: 11.5px;
+    color: #6b7280;
+    border-top: 1px solid #e4e7eb;
+    line-height: 1.5;
+  }
+
+  /* SMS preview — phone frame */
+  .sms-frame {
+    margin: 20px auto;
+    width: 300px;
+    background: #000;
+    border-radius: 30px;
+    padding: 10px;
+    box-shadow: var(--shadow-lg);
+  }
+  .sms-screen {
+    background: #000;
+    border-radius: 22px;
+    overflow: hidden;
+    color: #fff;
+  }
+  .sms-topbar {
+    text-align: center;
+    padding: 10px 0 8px;
+    font-size: 11px;
+    color: #9ca3af;
+    border-bottom: 0.5px solid #1a1a1a;
+  }
+  .sms-sender {
+    padding: 12px;
+    text-align: center;
+    font-size: 13px;
+    color: #d1d5db;
+    border-bottom: 0.5px solid #1a1a1a;
+  }
+  .sms-bubble {
+    background: #2a2a2c;
+    color: #fff;
+    padding: 10px 12px;
+    border-radius: 16px;
+    margin: 14px 12px;
+    font-size: 13px;
+    line-height: 1.45;
+    max-width: 230px;
+  }
+  .sms-link {
+    display: block;
+    color: #4FBF80;
+    text-decoration: underline;
+    margin-top: 6px;
+    word-break: break-all;
+    cursor: pointer;
+  }
+  .sms-time {
+    text-align: center;
+    font-size: 10px;
+    color: #6b7280;
+    margin: 8px;
+  }
+
+  /* Patient response page preview */
+  .response-wrap {
+    margin: 20px auto;
+    max-width: 420px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: var(--shadow-md);
+  }
+  .response-top {
+    background: var(--accent);
+    color: var(--accent-fg);
+    padding: 20px;
+    border-bottom: 3px solid var(--gold);
+  }
+  .response-top .brand-mark {
+    margin-bottom: 10px;
+    background: rgba(255,255,255,0.18);
+    color: #fff;
+    border-bottom-color: var(--gold);
+  }
+  .response-top h2 {
+    margin: 0; font-size: 17px; font-weight: 700;
+  }
+  .response-top p { margin: 4px 0 0; font-size: 13px; opacity: 0.9; }
+  .response-body { padding: 20px; }
+  .response-body h3 { font-size: 15px; margin: 0 0 12px; font-weight: 600; }
+  .response-detail {
+    background: var(--surface-2);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    font-size: 13px;
+    line-height: 1.75;
+  }
+  .response-detail .label {
+    color: var(--fg-subtle);
+    text-transform: uppercase;
+    font-size: 10.5px;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+  }
+  .response-detail .val { font-weight: 600; color: var(--fg); }
+  .response-choices {
+    display: grid; gap: 10px;
+    margin-top: 10px;
+  }
+  .choice-btn {
+    padding: 14px 18px;
+    border-radius: 10px;
+    border: 2px solid;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    gap: 10px;
+  }
+  .choice-yes {
+    background: var(--good-soft);
+    border-color: var(--good);
+    color: var(--good);
+  }
+  .choice-yes:hover { background: var(--good); color: #fff; }
+  .choice-no {
+    background: var(--bad-soft);
+    border-color: var(--bad);
+    color: var(--bad);
+  }
+  .choice-no:hover { background: var(--bad); color: #fff; }
+  .response-foot {
+    padding: 12px 20px;
+    background: var(--surface-2);
+    font-size: 11px;
+    color: var(--fg-subtle);
+    border-top: 1px solid var(--border);
+    text-align: center;
+  }
+  .response-answered {
+    text-align: center;
+    padding: 30px 20px;
+  }
+  .response-answered .success-icon { margin-bottom: 14px; }
+
+  /* Tagline */
+  .made-with-love {
+    margin-top: 28px;
+    padding: 16px;
+    text-align: center;
+    font-size: 12.5px;
+    color: var(--fg-subtle);
+    letter-spacing: 0.01em;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .made-with-love .lily { color: var(--gold); display: inline-flex; }
+
+  /* Icons */
+  svg.ico { width: 14px; height: 14px; fill: currentColor; flex-shrink: 0; }
+  svg.ico-sm { width: 12px; height: 12px; fill: currentColor; }
+  svg.ico-lg { width: 18px; height: 18px; fill: currentColor; flex-shrink: 0; }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--fg);
+    color: var(--bg);
+    padding: 10px 18px;
+    border-radius: 8px;
+    font-size: 13px; font-weight: 500;
+    box-shadow: var(--shadow-lg);
+    z-index: 200;
+    animation: toastIn 0.25s;
+  }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translate(-50%, 8px); }
+    to { opacity: 1; transform: translateX(-50%); }
+  }
+</style>
+
+<header class="topbar">
+  <div class="brand">
+    <div class="brand-mark">OR</div>
+    <span>ORecover</span>
+  </div>
+  <div class="topbar-divider"></div>
+  <div class="hospital-pick" title="Hospital selector (demo)">
+    <svg class="ico" viewBox="0 0 20 20"><path d="M3 17V7l7-4 7 4v10h-5v-5H8v5H3z"/></svg>
+    <span>Royal University Hospital</span>
+    <span class="label-tag">Saskatoon</span>
+  </div>
+  <div class="topbar-right">
+    <button class="theme-toggle" id="themeToggle" title="Toggle theme" aria-label="Toggle theme">
+      <svg class="ico" viewBox="0 0 20 20"><path d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm5.657 2.343a1 1 0 010 1.414l-.707.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM10 15a5 5 0 100-10 5 5 0 000 10zm0 2a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zm-5.657-.343a1 1 0 010-1.414l.707-.707a1 1 0 011.414 1.414l-.707.707a1 1 0 01-1.414 0zM3 10a1 1 0 01-1 1H1a1 1 0 110-2h1a1 1 0 011 1zm.343-5.657a1 1 0 011.414 0l.707.707a1 1 0 01-1.414 1.414l-.707-.707a1 1 0 010-1.414z"/></svg>
+    </button>
+    <div class="user-chip">
+      <div class="avatar">RW</div>
+      <span>R. Wiebe · OR Scheduler</span>
+    </div>
+  </div>
+</header>
+
+<div class="shell">
+  <nav class="sidebar">
+    <div class="nav-section">Operations</div>
+    <div class="nav-item active" data-view="cases">
+      <svg class="ico" viewBox="0 0 20 20"><path d="M3 3h6v6H3zm8 0h6v4h-6zm0 6h6v8h-6zM3 11h6v6H3z"/></svg>
+      Live cases
+      <span class="count" id="liveCount">1</span>
+    </div>
+    <div class="nav-item" data-view="waitlist">
+      <svg class="ico" viewBox="0 0 20 20"><path d="M3 4h14v2H3zm0 5h14v2H3zm0 5h14v2H3z"/></svg>
+      Waitlist
+    </div>
+    <div class="nav-item" data-view="rules">
+      <svg class="ico" viewBox="0 0 20 20"><path d="M10 2L2 6l8 4 8-4-8-4zm-8 8l8 4 8-4M2 14l8 4 8-4"/></svg>
+      Rules engine
+    </div>
+    <div class="nav-section" style="margin-top: 12px;">Insights</div>
+    <div class="nav-item" data-view="reports">
+      <svg class="ico" viewBox="0 0 20 20"><path d="M3 17h14v1H3zm2-4h2v3H5zm4-5h2v8H9zm4-3h2v11h-2z"/></svg>
+      Reports
+    </div>
+    <div class="nav-section" style="margin-top: 12px;">Setup</div>
+    <div class="nav-item" data-view="integration">
+      <svg class="ico" viewBox="0 0 20 20"><path d="M10 3a7 7 0 100 14 7 7 0 000-14zm0 10a3 3 0 110-6 3 3 0 010 6z"/></svg>
+      Integration
+    </div>
+    <div class="nav-item" data-view="audit">
+      <svg class="ico" viewBox="0 0 20 20"><path d="M10 2a4 4 0 00-4 4v2H5a1 1 0 00-1 1v8a1 1 0 001 1h10a1 1 0 001-1V9a1 1 0 00-1-1h-1V6a4 4 0 00-4-4z"/></svg>
+      Access & audit
+    </div>
+  </nav>
+
+  <main>
+
+  <!-- ========================= LIVE CASES VIEW ========================= -->
+  <section class="view" data-view="cases">
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Live cases</h1>
+        <p class="page-subtitle">
+          Connected to Saskatchewan Surgical Registry · Last sync <span class="mono" id="lastSync">14 sec ago</span>
+        </p>
+      </div>
+      <div style="display: flex; gap: 8px;">
+        <button class="btn btn-ghost" id="resetBtn">
+          <svg class="ico" viewBox="0 0 20 20"><path d="M10 3a7 7 0 015.5 2.65V3h2v6h-6V7h2.78A5 5 0 1015 10h2a7 7 0 11-7-7z"/></svg>
+          Reset demo
+        </button>
+        <button class="btn btn-primary" id="triggerBtn">
+          <svg class="ico" viewBox="0 0 20 20"><path d="M10 2a1 1 0 01.894.553l7 14A1 1 0 0117 18H3a1 1 0 01-.894-1.447l7-14A1 1 0 0110 2zm0 5a1 1 0 00-1 1v3a1 1 0 102 0V8a1 1 0 00-1-1zm0 7a1 1 0 100 2 1 1 0 000-2z"/></svg>
+          Trigger demo cancellation
+        </button>
+      </div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric">
+        <div class="label">Slots recovered this week</div>
+        <div class="value" id="mSlots">23</div>
+        <div class="delta up">+6 vs last week</div>
+        <svg class="spark" viewBox="0 0 70 24" preserveAspectRatio="none" aria-hidden="true">
+          <polyline fill="none" stroke="var(--good)" stroke-width="1.5" points="0,16 10,15 20,12 30,13 40,9 50,8 60,5 70,4"/>
+          <circle cx="70" cy="4" r="2" fill="var(--good)"/>
+        </svg>
+      </div>
+      <div class="metric">
+        <div class="label">OR hours recovered</div>
+        <div class="value" id="mHours">41.5</div>
+        <div class="delta up">+9.5 hrs this week</div>
+        <svg class="spark" viewBox="0 0 70 24" preserveAspectRatio="none" aria-hidden="true">
+          <polyline fill="none" stroke="var(--gold)" stroke-width="1.5" points="0,18 10,16 20,15 30,11 40,12 50,9 60,7 70,5"/>
+          <circle cx="70" cy="5" r="2" fill="var(--gold)"/>
+        </svg>
+      </div>
+      <div class="metric">
+        <div class="label">Avg time to refill</div>
+        <div class="value" id="mTime">14:22</div>
+        <div class="delta">Target &lt; 20 min</div>
+        <svg class="spark" viewBox="0 0 70 24" preserveAspectRatio="none" aria-hidden="true">
+          <polyline fill="none" stroke="var(--info)" stroke-width="1.5" points="0,8 10,11 20,10 30,13 40,14 50,16 60,17 70,18"/>
+          <circle cx="70" cy="18" r="2" fill="var(--info)"/>
+        </svg>
+      </div>
+      <div class="metric">
+        <div class="label">Patient response rate</div>
+        <div class="value" id="mRate">63%</div>
+        <div class="delta up">+8 pts since launch</div>
+        <svg class="spark" viewBox="0 0 70 24" preserveAspectRatio="none" aria-hidden="true">
+          <polyline fill="none" stroke="var(--warn)" stroke-width="1.5" points="0,15 10,14 20,13 30,10 40,11 50,8 60,7 70,6"/>
+          <circle cx="70" cy="6" r="2" fill="var(--warn)"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="case-ribbon idle" id="caseRibbon">
+      <div class="ribbon-dot"></div>
+      <div>
+        <div class="ribbon-headline" id="ribbonHead">No active cancellation</div>
+        <div class="ribbon-sub" id="ribbonSub">
+          Click <b>Trigger demo cancellation</b> above to simulate a surgical slot opening up.
+        </div>
+      </div>
+      <div style="margin-left: auto; text-align: right;">
+        <div class="ribbon-timer-label">Elapsed</div>
+        <div class="ribbon-timer mono" id="ribbonTimer">00:00</div>
+      </div>
+    </div>
+
+    <div class="case-grid">
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Eligible patients</div>
+            <div class="panel-sub" id="eligibleSub">Waiting for cancellation…</div>
+          </div>
+        </div>
+        <div class="panel-body" id="patientList">
+          <div class="stream-empty">No active case. Trigger a cancellation to see eligible patients identified from the waitlist.</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Response stream</div>
+            <div class="panel-sub">Email + SMS outreach · live responses</div>
+          </div>
+        </div>
+        <div class="panel-body" id="streamList">
+          <div class="stream-empty">Outreach events will appear here in real time.</div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <div>
+            <div class="panel-title">Recommendation</div>
+            <div class="panel-sub">Applies RUH scheduling policy</div>
+          </div>
+        </div>
+        <div class="panel-body" id="recoPanel">
+          <div class="stream-empty">Once patient responses are in, the ranked recommendation appears here for human confirmation.</div>
+        </div>
+      </section>
+    </div>
+
+    <div class="table-wrap" style="margin-top:20px;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Procedure</th>
+            <th>Surgeon</th>
+            <th>Original patient</th>
+            <th>Replacement</th>
+            <th>Time to fill</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="recoveryLog">
+          <tr>
+            <td class="mono">08:42 AM</td>
+            <td>Total hip arthroplasty</td>
+            <td>Dr. Patel</td>
+            <td class="mono">PID‑3011 (A.D.)</td>
+            <td class="mono">PID‑2847 (M.K.)</td>
+            <td>00:15</td>
+            <td><span class="status-chip yes">Recovered</span></td>
+          </tr>
+          <tr>
+            <td class="mono">Yesterday · 14:08</td>
+            <td>Cataract extraction</td>
+            <td>Dr. Nguyen</td>
+            <td class="mono">PID‑4119 (B.T.)</td>
+            <td class="mono">PID‑3998 (C.L.)</td>
+            <td>00:09</td>
+            <td><span class="status-chip yes">Recovered</span></td>
+          </tr>
+          <tr>
+            <td class="mono">Yesterday · 10:51</td>
+            <td>Laparoscopic cholecystectomy</td>
+            <td>Dr. Johannsen</td>
+            <td class="mono">PID‑2217 (R.P.)</td>
+            <td class="mono">—</td>
+            <td>—</td>
+            <td><span class="status-chip no">Slot lost</span></td>
+          </tr>
+          <tr>
+            <td class="mono">Oct 3 · 09:17</td>
+            <td>Inguinal hernia repair</td>
+            <td>Dr. Johannsen</td>
+            <td class="mono">PID‑1884 (S.W.)</td>
+            <td class="mono">PID‑2043 (K.R.)</td>
+            <td>00:22</td>
+            <td><span class="status-chip yes">Recovered</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="footnote">
+      <svg class="ico" viewBox="0 0 20 20" style="color: var(--warn); margin-top: 2px;"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 4a1 1 0 011 1v4a1 1 0 11-2 0V7a1 1 0 011-1zm0 8a1 1 0 100 2 1 1 0 000-2z"/></svg>
+      <div>
+        <strong>Demo environment.</strong> All patient data in this view is simulated and intended to illustrate ORecover's workflow. In production, ORecover integrates with the Saskatchewan Surgical Registry and hospital EMR as a read-only waitlist consumer, and all booking confirmations remain under human control.
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================= WAITLIST VIEW ========================= -->
+  <section class="view" data-view="waitlist" hidden>
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Waitlist</h1>
+        <p class="page-subtitle">Read-only mirror of Saskatchewan Surgical Registry · 1,247 active patients</p>
+      </div>
+    </div>
+
+    <div class="filter-bar" id="waitlistFilters">
+      <button class="filter-chip active" data-filter="all">All <span class="count">1,247</span></button>
+      <button class="filter-chip" data-filter="shortNotice">Short-notice opt-in <span class="count">412</span></button>
+      <button class="filter-chip" data-filter="ready">Pre-op complete <span class="count">289</span></button>
+      <button class="filter-chip" data-filter="p1">Priority 1 <span class="count">38</span></button>
+      <button class="filter-chip" data-filter="p2">Priority 2 <span class="count">184</span></button>
+    </div>
+
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Patient</th>
+            <th>Procedure</th>
+            <th>Surgeon</th>
+            <th>Priority</th>
+            <th>Days waiting</th>
+            <th>Pre-op</th>
+            <th>Short-notice</th>
+            <th>Contact</th>
+          </tr>
+        </thead>
+        <tbody id="waitlistBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ========================= RULES ENGINE VIEW ========================= -->
+  <section class="view" data-view="rules" hidden>
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Rules engine</h1>
+        <p class="page-subtitle">
+          The ranking policy ORecover applies when selecting a replacement patient. Rules are read from the hospital's approved scheduling protocol — never set by ORecover.
+        </p>
+      </div>
+    </div>
+
+    <div class="rules-doc">
+      <div class="policy-id">RUH-SURG-2024-03 · v3.2 · effective 2024-03-01</div>
+      <h2>Short-notice replacement selection protocol</h2>
+      <div class="meta">
+        <span>Owner: Surgical Services Committee · RUH</span>
+        <span>Last reviewed: 2026-04-11</span>
+        <span>Signed off: Dr. L. Pelletier, VP Surgical Services</span>
+      </div>
+
+      <div class="rule-stack">
+        <div class="rule-card">
+          <div class="rule-num">1</div>
+          <div>
+            <div class="rule-title">Clinical priority (CTAS-S)</div>
+            <div class="rule-desc">
+              Patients with higher clinical priority (lower number) are selected first. Priority 1 is immediate, Priority 4 is routine. ORecover will never advance a lower-priority patient over an available higher-priority patient.
+            </div>
+            <div class="rule-code">priority ASC</div>
+          </div>
+        </div>
+
+        <div class="rule-card">
+          <div class="rule-num">2</div>
+          <div>
+            <div class="rule-title">Procedure and OR compatibility</div>
+            <div class="rule-desc">
+              The replacement patient's booked procedure must match the available OR time (duration, equipment, anesthesia profile). Any mismatch disqualifies the candidate automatically.
+            </div>
+            <div class="rule-code">procedure.code === cancelled.procedure.code</div>
+          </div>
+        </div>
+
+        <div class="rule-card">
+          <div class="rule-num">3</div>
+          <div>
+            <div class="rule-title">Pre-operative readiness window</div>
+            <div class="rule-desc">
+              Pre-op assessment, consent, and medical clearance must be complete and within 30 days of the opening. Patients outside the window are not contacted; patients inside but older than 21 days are flagged for same-day re-check.
+            </div>
+            <div class="rule-code">preOp.completedDaysAgo &lt;= 30</div>
+          </div>
+        </div>
+
+        <div class="rule-card">
+          <div class="rule-num">4</div>
+          <div>
+            <div class="rule-title">Short-notice consent</div>
+            <div class="rule-desc">
+              Only patients who have explicitly opted in to the short-notice list are contacted. Opt-in is captured during pre-op and can be withdrawn at any time by the patient.
+            </div>
+            <div class="rule-code">shortNotice.optedIn === true</div>
+          </div>
+        </div>
+
+        <div class="rule-card">
+          <div class="rule-num">5</div>
+          <div>
+            <div class="rule-title">Surgeon preference match (tie-breaker)</div>
+            <div class="rule-desc">
+              Within the same priority band, patients whose care plan names the cancelled surgeon are ranked above patients with "any surgeon" or a different preferred surgeon. This preserves continuity of care.
+            </div>
+            <div class="rule-code">surgeonMatch DESC</div>
+          </div>
+        </div>
+
+        <div class="rule-card">
+          <div class="rule-num">6</div>
+          <div>
+            <div class="rule-title">Waiting time (tie-breaker)</div>
+            <div class="rule-desc">
+              Within the same priority and surgeon-match band, the patient with the longest waiting time is selected. This complies with the Saskatchewan Patient-First surgical access standards.
+            </div>
+            <div class="rule-code">waitingDays DESC</div>
+          </div>
+        </div>
+
+        <div class="rule-card" style="border-color: var(--accent); background: var(--accent-soft);">
+          <div class="rule-num" style="background: var(--gold); color: #1a1a1a;">✓</div>
+          <div>
+            <div class="rule-title">Human confirmation (non-negotiable)</div>
+            <div class="rule-desc">
+              ORecover never books a surgery. The scheduler must confirm the recommended patient before the OR slot is reassigned. Scheduler may override the recommendation with a documented reason, which is written to the audit trail.
+            </div>
+            <div class="rule-code" style="background: var(--surface);">manual_confirmation_required = true</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================= REPORTS VIEW ========================= -->
+  <section class="view" data-view="reports" hidden>
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Reports</h1>
+        <p class="page-subtitle">Operational performance · last 30 days</p>
+      </div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric">
+        <div class="label">Slots recovered · 30d</div>
+        <div class="value">87</div>
+        <div class="delta up">vs 54 in prior 30d</div>
+      </div>
+      <div class="metric">
+        <div class="label">OR hours recovered · 30d</div>
+        <div class="value">164.5</div>
+        <div class="delta up">+68.5 hrs</div>
+      </div>
+      <div class="metric">
+        <div class="label">Slots lost · 30d</div>
+        <div class="value">11</div>
+        <div class="delta">7.5% of cancellations</div>
+      </div>
+      <div class="metric">
+        <div class="label">Patients contacted · 30d</div>
+        <div class="value">1,312</div>
+        <div class="delta">63% response rate</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:14px;">
+      <div class="chart-card">
+        <div class="chart-title">Slots recovered per day</div>
+        <div class="chart-sub">Last 14 days · daily cancellation refills</div>
+        <svg class="bar-chart" viewBox="0 0 560 220" preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+          <!-- grid -->
+          <g stroke="var(--border)" stroke-width="1">
+            <line x1="40" y1="40" x2="540" y2="40"/>
+            <line x1="40" y1="90" x2="540" y2="90"/>
+            <line x1="40" y1="140" x2="540" y2="140"/>
+            <line x1="40" y1="190" x2="540" y2="190"/>
+          </g>
+          <!-- y labels -->
+          <g fill="var(--fg-subtle)" font-size="10" font-family="Inter, sans-serif">
+            <text x="32" y="43" text-anchor="end">12</text>
+            <text x="32" y="93" text-anchor="end">8</text>
+            <text x="32" y="143" text-anchor="end">4</text>
+            <text x="32" y="193" text-anchor="end">0</text>
+          </g>
+          <!-- bars -->
+          <g id="chartBars"></g>
+        </svg>
+      </div>
+      <div class="chart-card">
+        <div class="chart-title">Response rate by procedure</div>
+        <div class="chart-sub">Share of contacted patients who replied</div>
+        <div style="display:flex;flex-direction:column;gap:12px;margin-top:4px;">
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px;">
+              <span>Total knee</span><b>71%</b>
+            </div>
+            <div style="height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden;">
+              <div style="height:100%;width:71%;background:var(--accent);"></div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px;">
+              <span>Total hip</span><b>68%</b>
+            </div>
+            <div style="height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden;">
+              <div style="height:100%;width:68%;background:var(--accent);"></div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px;">
+              <span>Cataract</span><b>59%</b>
+            </div>
+            <div style="height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden;">
+              <div style="height:100%;width:59%;background:var(--gold);"></div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px;">
+              <span>Cholecystectomy</span><b>54%</b>
+            </div>
+            <div style="height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden;">
+              <div style="height:100%;width:54%;background:var(--gold);"></div>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px;">
+              <span>Hernia repair</span><b>48%</b>
+            </div>
+            <div style="height:6px;background:var(--surface-2);border-radius:3px;overflow:hidden;">
+              <div style="height:100%;width:48%;background:var(--warn);"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chart-card" style="margin-top:14px;">
+      <div class="chart-title">Fill time distribution</div>
+      <div class="chart-sub">Minutes from cancellation to booking confirmed · last 30 days</div>
+      <div style="display:grid;grid-template-columns:repeat(6,1fr);gap:8px;margin-top:12px;">
+        <div style="text-align:center;">
+          <div style="font-size:18px;font-weight:700;">14</div>
+          <div style="font-size:11px;color:var(--fg-subtle);text-transform:uppercase;letter-spacing:0.04em;">&lt; 10 min</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:18px;font-weight:700;">31</div>
+          <div style="font-size:11px;color:var(--fg-subtle);text-transform:uppercase;letter-spacing:0.04em;">10–15 min</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:18px;font-weight:700;">24</div>
+          <div style="font-size:11px;color:var(--fg-subtle);text-transform:uppercase;letter-spacing:0.04em;">15–20 min</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:18px;font-weight:700;">12</div>
+          <div style="font-size:11px;color:var(--fg-subtle);text-transform:uppercase;letter-spacing:0.04em;">20–30 min</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:18px;font-weight:700;">6</div>
+          <div style="font-size:11px;color:var(--fg-subtle);text-transform:uppercase;letter-spacing:0.04em;">&gt; 30 min</div>
+        </div>
+        <div style="text-align:center;">
+          <div style="font-size:18px;font-weight:700;color:var(--bad);">11</div>
+          <div style="font-size:11px;color:var(--fg-subtle);text-transform:uppercase;letter-spacing:0.04em;">slot lost</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================= INTEGRATION VIEW ========================= -->
+  <section class="view" data-view="integration" hidden>
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Integration</h1>
+        <p class="page-subtitle">External systems ORecover is connected to · all read-only unless flagged</p>
+      </div>
+    </div>
+
+    <div class="integration-grid">
+      <div class="integ-card">
+        <div class="integ-head">
+          <div class="integ-logo" style="background:var(--accent-soft);color:var(--accent);">SK</div>
+          <div style="flex:1;">
+            <div class="integ-name">Saskatchewan Surgical Registry</div>
+            <div class="integ-status"><span class="dot"></span>Connected · read-only</div>
+          </div>
+        </div>
+        <div class="integ-desc">Primary waitlist source. Patient demographics, procedure, surgeon preference, priority score, pre-op status, short-notice opt-in flag.</div>
+        <div class="integ-stats">
+          <div><b>1,247</b> patients mirrored</div>
+          <div><b>14 s</b> ago · last sync</div>
+        </div>
+      </div>
+
+      <div class="integ-card">
+        <div class="integ-head">
+          <div class="integ-logo" style="background:var(--info-soft);color:var(--info);">EMR</div>
+          <div style="flex:1;">
+            <div class="integ-name">Cerner Millennium (RUH)</div>
+            <div class="integ-status"><span class="dot"></span>Connected · HL7 FHIR R4</div>
+          </div>
+        </div>
+        <div class="integ-desc">Live OR schedule, cancellation events, patient contact preferences, confirmed bookings written back on human confirmation.</div>
+        <div class="integ-stats">
+          <div><b>HL7 FHIR</b> R4</div>
+          <div><b>42 ms</b> · avg latency</div>
+        </div>
+      </div>
+
+      <div class="integ-card">
+        <div class="integ-head">
+          <div class="integ-logo" style="background:var(--good-soft);color:var(--good);">
+            <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor"><path d="M2 2h16v12H5l-3 3z"/></svg>
+          </div>
+          <div style="flex:1;">
+            <div class="integ-name">SMS gateway</div>
+            <div class="integ-status"><span class="dot"></span>Connected · PIPEDA-compliant</div>
+          </div>
+        </div>
+        <div class="integ-desc">Short-notice outreach via SMS. Secure one-time response links. No PHI in message body. Opt-out keyword respected.</div>
+        <div class="integ-stats">
+          <div><b>1,312</b> sent · 30d</div>
+          <div><b>99.4%</b> delivery</div>
+        </div>
+      </div>
+
+      <div class="integ-card">
+        <div class="integ-head">
+          <div class="integ-logo" style="background:var(--warn-soft);color:var(--warn);">
+            <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor"><path d="M2 4h16v12H2zm0 0l8 6 8-6"/></svg>
+          </div>
+          <div style="flex:1;">
+            <div class="integ-name">Email gateway</div>
+            <div class="integ-status"><span class="dot"></span>Connected · TLS 1.3, DKIM</div>
+          </div>
+        </div>
+        <div class="integ-desc">Short-notice outreach via email. Branded as the hospital. Secure one-time response links expire with the response window.</div>
+        <div class="integ-stats">
+          <div><b>1,088</b> sent · 30d</div>
+          <div><b>98.1%</b> delivery</div>
+        </div>
+      </div>
+
+      <div class="integ-card">
+        <div class="integ-head">
+          <div class="integ-logo" style="background:var(--gold-soft);color:var(--gold);">AD</div>
+          <div style="flex:1;">
+            <div class="integ-name">Hospital identity (SSO)</div>
+            <div class="integ-status"><span class="dot"></span>Connected · Azure AD / SAML</div>
+          </div>
+        </div>
+        <div class="integ-desc">Scheduler and clinician access tied to the hospital directory. MFA required. Role-based access control enforced.</div>
+        <div class="integ-stats">
+          <div><b>23</b> active users</div>
+          <div><b>MFA</b> enforced</div>
+        </div>
+      </div>
+
+      <div class="integ-card">
+        <div class="integ-head">
+          <div class="integ-logo" style="background:var(--bad-soft);color:var(--bad);">
+            <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor"><path d="M10 2a4 4 0 00-4 4v2H5a1 1 0 00-1 1v8a1 1 0 001 1h10a1 1 0 001-1V9a1 1 0 00-1-1h-1V6a4 4 0 00-4-4z"/></svg>
+          </div>
+          <div style="flex:1;">
+            <div class="integ-name">Audit log store</div>
+            <div class="integ-status"><span class="dot"></span>Connected · append-only</div>
+          </div>
+        </div>
+        <div class="integ-desc">All actions written to tamper-evident, append-only log with 7-year retention. Available for SHA privacy review on demand.</div>
+        <div class="integ-stats">
+          <div><b>18,440</b> events · 30d</div>
+          <div><b>0</b> gaps</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================= AUDIT VIEW ========================= -->
+  <section class="view" data-view="audit" hidden>
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Access &amp; audit</h1>
+        <p class="page-subtitle">Append-only log of every action taken in ORecover · 7-year retention</p>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Timestamp</th>
+            <th>Actor</th>
+            <th>Action</th>
+            <th>Target</th>
+            <th>Reason / notes</th>
+          </tr>
+        </thead>
+        <tbody id="auditBody">
+          <tr>
+            <td class="mono">Today 08:57:12</td>
+            <td>R. Wiebe</td>
+            <td>Booking confirmed</td>
+            <td class="mono">PID‑2847 → OR 6 · 10:00</td>
+            <td>System recommendation accepted</td>
+          </tr>
+          <tr>
+            <td class="mono">Today 08:43:04</td>
+            <td>system</td>
+            <td>Outreach dispatched</td>
+            <td class="mono">14 patients · case CX‑2026‑10‑41</td>
+            <td>12 email + SMS, 2 SMS-only</td>
+          </tr>
+          <tr>
+            <td class="mono">Today 08:42:51</td>
+            <td>system</td>
+            <td>Cancellation received</td>
+            <td class="mono">PID‑3487 · TKA (R) · 10:00</td>
+            <td>Source: SK Surgical Registry · patient-reported illness</td>
+          </tr>
+          <tr>
+            <td class="mono">Yesterday 14:08:33</td>
+            <td>M. Thorsen</td>
+            <td>Booking confirmed</td>
+            <td class="mono">PID‑3998 → OR 2 · 14:30</td>
+            <td>System recommendation accepted</td>
+          </tr>
+          <tr>
+            <td class="mono">Yesterday 10:51:14</td>
+            <td>system</td>
+            <td>Case closed · slot lost</td>
+            <td class="mono">case CX‑2026‑10‑39</td>
+            <td>No eligible patient available within response window</td>
+          </tr>
+          <tr>
+            <td class="mono">Yesterday 09:17:22</td>
+            <td>R. Wiebe</td>
+            <td>Override applied</td>
+            <td class="mono">PID‑2043 → OR 4 · 09:45</td>
+            <td>Scheduler note: recommended patient had transportation issue</td>
+          </tr>
+          <tr>
+            <td class="mono">Oct 3 08:12:04</td>
+            <td>Dr. L. Pelletier</td>
+            <td>Policy change</td>
+            <td class="mono">RUH-SURG-2024-03 v3.2</td>
+            <td>Pre-op window extended from 21 to 30 days</td>
+          </tr>
+          <tr>
+            <td class="mono">Oct 3 07:00:01</td>
+            <td>system</td>
+            <td>Nightly sync</td>
+            <td class="mono">SK Surgical Registry</td>
+            <td>1,247 patient records refreshed</td>
+          </tr>
+          <tr>
+            <td class="mono">Oct 2 16:30:18</td>
+            <td>K. Nowak</td>
+            <td>User added</td>
+            <td class="mono">s.anwar@saskhealthauthority.ca</td>
+            <td>Role: Scheduler (OR 4-6) · MFA enrolled</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <div class="made-with-love">
+    <span class="lily" aria-hidden="true">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor"><path d="M12 2c1.2 2.2 1.2 4.4 0 6.6-1.2-2.2-1.2-4.4 0-6.6zM4 12c2.2-1.2 4.4-1.2 6.6 0-2.2 1.2-4.4 1.2-6.6 0zm15.4 0c-2.2 1.2-4.4 1.2-6.6 0 2.2-1.2 4.4-1.2 6.6 0zM7 5.5c2 .6 3.5 2.1 4.1 4.1-2-.6-3.5-2.1-4.1-4.1zm10 0c-.6 2-2.1 3.5-4.1 4.1.6-2 2.1-3.5 4.1-4.1zM12 22c-1.2-2.2-1.2-4.4 0-6.6 1.2 2.2 1.2 4.4 0 6.6z"/></svg>
+    </span>
+    Built with love in the Land of Living Skies.
+  </div>
+  </main>
+</div>
+
+<!-- ========================= MODAL ========================= -->
+<div class="modal-backdrop" id="modalBackdrop" hidden>
+  <div class="modal" id="modal" role="dialog" aria-modal="true"></div>
+</div>
+
+<script>
+  // ---------- Theme toggle ----------
+  const root = document.documentElement;
+  const themeToggle = document.getElementById('themeToggle');
+  try {
+    const saved = localStorage.getItem('orecover-theme');
+    if (saved === 'dark' || saved === 'light') root.setAttribute('data-theme', saved);
+  } catch (e) {}
+  themeToggle.addEventListener('click', () => {
+    const current = root.getAttribute('data-theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    let next;
+    if (current === 'dark') next = 'light';
+    else if (current === 'light') next = 'dark';
+    else next = prefersDark ? 'light' : 'dark';
+    root.setAttribute('data-theme', next);
+    try { localStorage.setItem('orecover-theme', next); } catch (e) {}
+  });
+
+  // ---------- View switching ----------
+  const navItems = document.querySelectorAll('.nav-item[data-view]');
+  const views = document.querySelectorAll('.view[data-view]');
+  navItems.forEach(item => {
+    item.addEventListener('click', () => {
+      const key = item.dataset.view;
+      navItems.forEach(n => n.classList.toggle('active', n === item));
+      views.forEach(v => v.hidden = v.dataset.view !== key);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+
+  // ---------- Mock data ----------
+  const CASE = {
+    procedure: 'Total knee arthroplasty (right)',
+    procedureShort: 'TKA (R)',
+    procedureDuration: '2 h 15 min',
+    anesthesia: 'Spinal + sedation',
+    surgeon: 'Dr. Chen',
+    facility: 'RUH · OR 6',
+    slotTime: '10:00 AM today',
+    cancelledPid: 'PID‑3487',
+    cancelledInitials: 'J.H.',
+    cancelReason: 'Patient illness — same-day cancellation',
+    caseId: 'CX‑2026‑10‑42',
+  };
+
+  const PATIENTS = [
+    { pid: 'PID‑2847', initials: 'M.K.', age: 68, priority: 2, waitDays: 94, preOpReady: true, preOpDate: '11 days ago', surgeonMatch: true, shortNotice: true, contact: 'both', resp: 'yes', delay: 3200, phone: '(306) 555‑0147', email: 'm.k.****@saskmail.ca' },
+    { pid: 'PID‑2103', initials: 'J.T.', age: 71, priority: 2, waitDays: 142, preOpReady: true, preOpDate: '19 days ago', surgeonMatch: false, shortNotice: true, contact: 'both', resp: 'yes', delay: 5100, phone: '(306) 555‑0362', email: 'j.t.****@saskmail.ca' },
+    { pid: 'PID‑3356', initials: 'D.M.', age: 59, priority: 3, waitDays: 61, preOpReady: true, preOpDate: '7 days ago', surgeonMatch: true, shortNotice: true, contact: 'sms', resp: 'yes', delay: 2700, phone: '(306) 555‑0291', email: null },
+    { pid: 'PID‑1992', initials: 'L.O.', age: 74, priority: 2, waitDays: 118, preOpReady: true, preOpDate: '14 days ago', surgeonMatch: false, shortNotice: true, contact: 'both', resp: 'no', delay: 4600, phone: '(306) 555‑0518', email: 'l.o.****@saskmail.ca' },
+    { pid: 'PID‑3041', initials: 'R.B.', age: 63, priority: 3, waitDays: 77, preOpReady: true, preOpDate: '9 days ago', surgeonMatch: true, shortNotice: true, contact: 'email', resp: 'yes', delay: 6800, phone: null, email: 'r.b.****@saskmail.ca' },
+    { pid: 'PID‑2255', initials: 'H.V.', age: 69, priority: 3, waitDays: 103, preOpReady: true, preOpDate: '22 days ago', surgeonMatch: false, shortNotice: true, contact: 'both', resp: 'no', delay: 3900, phone: '(306) 555‑0834', email: 'h.v.****@saskmail.ca' },
+    { pid: 'PID‑3799', initials: 'A.S.', age: 55, priority: 4, waitDays: 48, preOpReady: true, preOpDate: '4 days ago', surgeonMatch: true, shortNotice: true, contact: 'sms', resp: 'no', delay: 2900, phone: '(306) 555‑0702', email: null },
+    { pid: 'PID‑1770', initials: 'C.P.', age: 72, priority: 2, waitDays: 134, preOpReady: true, preOpDate: '28 days ago', surgeonMatch: false, shortNotice: true, contact: 'both', resp: 'none', delay: null, phone: '(306) 555‑0225', email: 'c.p.****@saskmail.ca' },
+    { pid: 'PID‑2918', initials: 'E.G.', age: 66, priority: 3, waitDays: 89, preOpReady: true, preOpDate: '12 days ago', surgeonMatch: true, shortNotice: true, contact: 'both', resp: 'no', delay: 5500, phone: '(306) 555‑0441', email: 'e.g.****@saskmail.ca' },
+    { pid: 'PID‑3122', initials: 'N.K.', age: 61, priority: 4, waitDays: 56, preOpReady: true, preOpDate: '6 days ago', surgeonMatch: false, shortNotice: true, contact: 'sms', resp: 'yes', delay: 7400, phone: '(306) 555‑0957', email: null },
+    { pid: 'PID‑2601', initials: 'T.R.', age: 70, priority: 3, waitDays: 97, preOpReady: true, preOpDate: '17 days ago', surgeonMatch: false, shortNotice: true, contact: 'both', resp: 'none', delay: null, phone: '(306) 555‑0163', email: 't.r.****@saskmail.ca' },
+    { pid: 'PID‑3488', initials: 'W.F.', age: 58, priority: 4, waitDays: 42, preOpReady: true, preOpDate: '3 days ago', surgeonMatch: true, shortNotice: true, contact: 'email', resp: 'no', delay: 4200, phone: null, email: 'w.f.****@saskmail.ca' },
+    { pid: 'PID‑1945', initials: 'B.O.', age: 73, priority: 2, waitDays: 155, preOpReady: true, preOpDate: '35 days ago', surgeonMatch: false, shortNotice: true, contact: 'both', resp: 'none', delay: null, phone: '(306) 555‑0319', email: 'b.o.****@saskmail.ca' },
+    { pid: 'PID‑3267', initials: 'S.A.', age: 64, priority: 3, waitDays: 82, preOpReady: true, preOpDate: '10 days ago', surgeonMatch: true, shortNotice: true, contact: 'sms', resp: 'yes', delay: 4800, phone: '(306) 555‑0586', email: null },
+  ];
+
+  // Waitlist seed data (expanded for the Waitlist view)
+  const WAITLIST = [
+    ...PATIENTS.map(p => ({ ...p, procedure: 'Total knee arthroplasty', surgeon: p.surgeonMatch ? 'Dr. Chen' : 'Dr. Molina' })),
+    { pid: 'PID‑3011', initials: 'A.D.', age: 66, priority: 2, waitDays: 112, preOpReady: true, preOpDate: '14 days ago', surgeonMatch: true, shortNotice: true, contact: 'both', procedure: 'Total hip arthroplasty', surgeon: 'Dr. Patel' },
+    { pid: 'PID‑4119', initials: 'B.T.', age: 78, priority: 2, waitDays: 203, preOpReady: true, preOpDate: '8 days ago', surgeonMatch: true, shortNotice: true, contact: 'email', procedure: 'Cataract extraction (OD)', surgeon: 'Dr. Nguyen' },
+    { pid: 'PID‑3998', initials: 'C.L.', age: 81, priority: 3, waitDays: 167, preOpReady: true, preOpDate: '5 days ago', surgeonMatch: true, shortNotice: true, contact: 'both', procedure: 'Cataract extraction (OS)', surgeon: 'Dr. Nguyen' },
+    { pid: 'PID‑2217', initials: 'R.P.', age: 54, priority: 3, waitDays: 71, preOpReady: false, preOpDate: 'not scheduled', surgeonMatch: false, shortNotice: false, contact: 'email', procedure: 'Laparoscopic cholecystectomy', surgeon: 'Dr. Johannsen' },
+    { pid: 'PID‑1884', initials: 'S.W.', age: 48, priority: 3, waitDays: 94, preOpReady: true, preOpDate: '19 days ago', surgeonMatch: true, shortNotice: true, contact: 'sms', procedure: 'Inguinal hernia repair', surgeon: 'Dr. Johannsen' },
+    { pid: 'PID‑2043', initials: 'K.R.', age: 62, priority: 2, waitDays: 128, preOpReady: true, preOpDate: '11 days ago', surgeonMatch: true, shortNotice: true, contact: 'both', procedure: 'Inguinal hernia repair', surgeon: 'Dr. Johannsen' },
+    { pid: 'PID‑3621', initials: 'P.H.', age: 70, priority: 1, waitDays: 24, preOpReady: true, preOpDate: '2 days ago', surgeonMatch: true, shortNotice: true, contact: 'both', procedure: 'Colonoscopy (urgent)', surgeon: 'Dr. Okafor' },
+    { pid: 'PID‑2988', initials: 'G.V.', age: 59, priority: 1, waitDays: 18, preOpReady: true, preOpDate: '3 days ago', surgeonMatch: true, shortNotice: true, contact: 'sms', procedure: 'Mastectomy', surgeon: 'Dr. Patel' },
+    { pid: 'PID‑3774', initials: 'J.N.', age: 46, priority: 4, waitDays: 38, preOpReady: false, preOpDate: 'scheduled Oct 12', surgeonMatch: false, shortNotice: false, contact: 'email', procedure: 'Carpal tunnel release', surgeon: 'Dr. Molina' },
+    { pid: 'PID‑1550', initials: 'Y.K.', age: 83, priority: 2, waitDays: 189, preOpReady: true, preOpDate: '7 days ago', surgeonMatch: false, shortNotice: true, contact: 'both', procedure: 'Total hip arthroplasty', surgeon: 'Dr. Molina' },
+    { pid: 'PID‑3399', initials: 'E.M.', age: 65, priority: 3, waitDays: 102, preOpReady: true, preOpDate: '15 days ago', surgeonMatch: true, shortNotice: true, contact: 'sms', procedure: 'Rotator cuff repair', surgeon: 'Dr. Chen' },
+    { pid: 'PID‑2466', initials: 'F.D.', age: 72, priority: 2, waitDays: 145, preOpReady: true, preOpDate: '21 days ago', surgeonMatch: true, shortNotice: true, contact: 'email', procedure: 'Total knee arthroplasty', surgeon: 'Dr. Chen' },
+    { pid: 'PID‑4057', initials: 'T.B.', age: 56, priority: 4, waitDays: 29, preOpReady: false, preOpDate: 'not scheduled', surgeonMatch: false, shortNotice: false, contact: 'email', procedure: 'Varicose vein ligation', surgeon: 'Dr. Johannsen' },
+    { pid: 'PID‑3812', initials: 'O.A.', age: 68, priority: 3, waitDays: 83, preOpReady: true, preOpDate: '13 days ago', surgeonMatch: true, shortNotice: true, contact: 'both', procedure: 'Cholecystectomy', surgeon: 'Dr. Johannsen' },
+    { pid: 'PID‑2719', initials: 'V.S.', age: 60, priority: 3, waitDays: 108, preOpReady: true, preOpDate: '18 days ago', surgeonMatch: false, shortNotice: true, contact: 'sms', procedure: 'Hysterectomy', surgeon: 'Dr. Okafor' },
+  ];
+
+  // Fill waitlist table
+  function renderWaitlist(filter = 'all') {
+    const body = document.getElementById('waitlistBody');
+    let rows = WAITLIST;
+    if (filter === 'shortNotice') rows = rows.filter(r => r.shortNotice);
+    if (filter === 'ready') rows = rows.filter(r => r.preOpReady);
+    if (filter === 'p1') rows = rows.filter(r => r.priority === 1);
+    if (filter === 'p2') rows = rows.filter(r => r.priority === 2);
+    body.innerHTML = rows.map(r => `
+      <tr>
+        <td>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <div class="pid" style="width:28px;height:28px;font-size:11px;">${r.initials}</div>
+            <div class="mono">${r.pid}</div>
+          </div>
+        </td>
+        <td>${r.procedure}</td>
+        <td>${r.surgeon}</td>
+        <td><span class="chip priority-${r.priority}">Priority ${r.priority}</span></td>
+        <td>${r.waitDays}</td>
+        <td>${r.preOpReady ? '<span class="status-chip yes">Ready · ' + r.preOpDate + '</span>' : '<span class="status-chip pending">' + r.preOpDate + '</span>'}</td>
+        <td>${r.shortNotice ? '<span class="status-chip contacted">Opted in</span>' : '<span class="status-chip pending">—</span>'}</td>
+        <td style="font-size:12px;color:var(--fg-muted);">${r.contact === 'both' ? 'Email + SMS' : r.contact === 'email' ? 'Email only' : 'SMS only'}</td>
+      </tr>
+    `).join('');
+  }
+  renderWaitlist();
+  document.querySelectorAll('#waitlistFilters .filter-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      document.querySelectorAll('#waitlistFilters .filter-chip').forEach(c => c.classList.toggle('active', c === chip));
+      renderWaitlist(chip.dataset.filter);
+    });
+  });
+
+  // Render reports chart bars
+  (function renderChart() {
+    const data = [4, 7, 3, 9, 5, 8, 6, 11, 7, 10, 8, 12, 9, 6];
+    const bars = document.getElementById('chartBars');
+    const maxVal = 12;
+    const barW = (500 / data.length) - 6;
+    data.forEach((v, i) => {
+      const h = (v / maxVal) * 150;
+      const x = 40 + i * (500 / data.length) + 3;
+      const y = 190 - h;
+      bars.innerHTML += `<rect x="${x}" y="${y}" width="${barW}" height="${h}" rx="2" fill="var(--accent)" />`;
+      if (i === data.length - 1) {
+        bars.innerHTML += `<rect x="${x}" y="${y}" width="${barW}" height="${h}" rx="2" fill="var(--gold)" />`;
+      }
+    });
+    // x-axis labels
+    const labels = ['M','T','W','T','F','S','S','M','T','W','T','F','S','S'];
+    labels.forEach((lab, i) => {
+      const x = 40 + i * (500 / data.length) + barW / 2 + 3;
+      bars.innerHTML += `<text x="${x}" y="208" text-anchor="middle" font-size="10" font-family="Inter, sans-serif" fill="var(--fg-subtle)">${lab}</text>`;
+    });
+  })();
+
+  // ---------- Helpers ----------
+  function el(tag, attrs = {}, children = []) {
+    const node = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k === 'class') node.className = v;
+      else if (k === 'html') node.innerHTML = v;
+      else node.setAttribute(k, v);
+    }
+    for (const c of children) node.appendChild(typeof c === 'string' ? document.createTextNode(c) : c);
+    return node;
+  }
+  function rowId(pid) { return `row-${pid.replace(/[^A-Za-z0-9]/g, '')}`; }
+
+  function contactIcons(contact) {
+    const bits = [];
+    if (contact === 'email' || contact === 'both') {
+      bits.push('<div class="send-icon" title="Email"><svg viewBox="0 0 14 14" width="12" height="12" fill="currentColor"><path d="M1 3h12v8H1zm0 0l6 4 6-4"/></svg></div>');
+    }
+    if (contact === 'sms' || contact === 'both') {
+      bits.push('<div class="send-icon" title="SMS"><svg viewBox="0 0 14 14" width="12" height="12" fill="currentColor"><path d="M2 2h10a1 1 0 011 1v6a1 1 0 01-1 1H6l-3 3V3a1 1 0 011-1z"/></svg></div>');
+    }
+    return bits.join('');
+  }
+
+  function renderPatients(patients) {
+    const list = document.getElementById('patientList');
+    list.innerHTML = '';
+    patients.forEach(p => {
+      const row = el('div', { class: 'patient', id: rowId(p.pid) });
+      row.innerHTML = `
+        <div class="pid">${p.initials}</div>
+        <div>
+          <div class="pname">${p.pid} <span class="chip priority-${p.priority}">Priority ${p.priority}</span></div>
+          <div class="pmeta">
+            ${p.age} yrs
+            <span class="dot">·</span>
+            Waiting ${p.waitDays} days
+            <span class="dot">·</span>
+            ${p.surgeonMatch ? '<span style="color: var(--good)">✓ Dr. Chen</span>' : 'Dr. Chen OK'}
+            <span class="dot">·</span>
+            Pre‑op ${p.preOpDate}
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="view-btn" data-pid="${p.pid}" title="View outreach" aria-label="View outreach">
+            <svg viewBox="0 0 20 20" width="12" height="12" fill="currentColor"><path d="M10 4C6 4 2.73 6.6 1 10c1.73 3.4 5 6 9 6s7.27-2.6 9-6c-1.73-3.4-5-6-9-6zm0 10a4 4 0 110-8 4 4 0 010 8zm0-6a2 2 0 100 4 2 2 0 000-4z"/></svg>
+          </button>
+          <div class="send-icons" data-pid="${p.pid}">${contactIcons(p.contact)}</div>
+          <span class="status-chip pending" data-status="${p.pid}">Awaiting</span>
+        </div>
+      `;
+      list.appendChild(row);
+      row.querySelector('.view-btn').addEventListener('click', () => openOutreachModal(p));
+    });
+  }
+
+  function pushStream(entry) {
+    const list = document.getElementById('streamList');
+    const empty = list.querySelector('.stream-empty');
+    if (empty) empty.remove();
+    const node = el('div', { class: 'stream-entry' });
+    node.innerHTML = `
+      <div class="stream-time mono">${entry.time}</div>
+      <div class="stream-icon ${entry.kind}">
+        ${iconForKind(entry.kind)}
+      </div>
+      <div class="stream-body">${entry.body}</div>
+    `;
+    list.insertBefore(node, list.firstChild);
+  }
+
+  function iconForKind(kind) {
+    if (kind === 'yes') return '<svg viewBox="0 0 14 14" width="12" height="12" fill="currentColor"><path d="M5.5 10L2 6.5l1.4-1.4L5.5 7.2l5.1-5.1L12 3.5z"/></svg>';
+    if (kind === 'no') return '<svg viewBox="0 0 14 14" width="12" height="12" fill="currentColor"><path d="M11 3L7 7 3 3 2 4l4 4-4 4 1 1 4-4 4 4 1-1-4-4 4-4z"/></svg>';
+    if (kind === 'send') return '<svg viewBox="0 0 14 14" width="12" height="12" fill="currentColor"><path d="M2 2l10 5-10 5 1.5-5z"/></svg>';
+    return '<svg viewBox="0 0 14 14" width="12" height="12" fill="currentColor"><circle cx="7" cy="7" r="2.5"/></svg>';
+  }
+
+  // ---------- Demo state machine ----------
+  let caseStart = null;
+  let timerInterval = null;
+  let timeouts = [];
+  let state = 'idle';
+  let availablePatients = [];
+  let unavailablePatients = [];
+  let recommendation = null;
+  let runnerUp = null;
+
+  function fmtTimer(ms) {
+    const s = Math.floor(ms / 1000);
+    const m = Math.floor(s / 60);
+    return `${String(m).padStart(2,'0')}:${String(s % 60).padStart(2,'0')}`;
+  }
+  function clockFromStart(offsetMs) {
+    const d = new Date(caseStart + offsetMs);
+    return d.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  }
+  function updateTimer() {
+    const t = Date.now() - caseStart;
+    document.getElementById('ribbonTimer').textContent = fmtTimer(t);
+  }
+
+  function reset() {
+    timeouts.forEach(t => clearTimeout(t));
+    timeouts = [];
+    if (timerInterval) clearInterval(timerInterval);
+    caseStart = null;
+    state = 'idle';
+    availablePatients = [];
+    unavailablePatients = [];
+    recommendation = null;
+    runnerUp = null;
+
+    document.getElementById('caseRibbon').className = 'case-ribbon idle';
+    document.getElementById('ribbonHead').textContent = 'No active cancellation';
+    document.getElementById('ribbonSub').innerHTML = 'Click <b>Trigger demo cancellation</b> above to simulate a surgical slot opening up.';
+    document.getElementById('ribbonTimer').textContent = '00:00';
+    document.getElementById('eligibleSub').textContent = 'Waiting for cancellation…';
+    document.getElementById('patientList').innerHTML = '<div class="stream-empty">No active case. Trigger a cancellation to see eligible patients identified from the waitlist.</div>';
+    document.getElementById('streamList').innerHTML = '<div class="stream-empty">Outreach events will appear here in real time.</div>';
+    document.getElementById('recoPanel').innerHTML = '<div class="stream-empty">Once patient responses are in, the ranked recommendation appears here for human confirmation.</div>';
+    document.getElementById('triggerBtn').disabled = false;
+    closeModal();
+  }
+
+  function trigger() {
+    reset();
+    caseStart = Date.now();
+    state = 'opened';
+    document.getElementById('triggerBtn').disabled = true;
+
+    const ribbon = document.getElementById('caseRibbon');
+    ribbon.className = 'case-ribbon';
+    document.getElementById('ribbonHead').innerHTML =
+      `Cancellation received · <span class="mono">${CASE.procedureShort}</span> · ${CASE.surgeon} · ${CASE.slotTime}`;
+    document.getElementById('ribbonSub').textContent = CASE.cancelReason;
+
+    timerInterval = setInterval(updateTimer, 250);
+
+    pushStream({ time: clockFromStart(0), kind: 'sys', body: `<b>Cancellation received</b> from Surgical Registry · <span class="mono">${CASE.cancelledPid}</span> for ${CASE.procedure}` });
+
+    timeouts.push(setTimeout(() => {
+      pushStream({ time: clockFromStart(600), kind: 'sys', body: `Searching waitlist · filtering by procedure, surgeon preference, pre‑op readiness, short‑notice opt‑in` });
+    }, 600));
+
+    timeouts.push(setTimeout(() => {
+      pushStream({ time: clockFromStart(1200), kind: 'sys', body: `<b>${PATIENTS.length} eligible patients identified</b> · 847 patients ineligible (procedure or readiness)` });
+      document.getElementById('eligibleSub').textContent = `${PATIENTS.length} patients matched · awaiting outreach`;
+      renderPatients(PATIENTS);
+    }, 1200));
+
+    timeouts.push(setTimeout(() => {
+      pushStream({ time: clockFromStart(1700), kind: 'send', body: `<b>Outreach dispatched</b> · ${PATIENTS.filter(p => p.contact !== 'sms').length} emails, ${PATIENTS.filter(p => p.contact !== 'email').length} SMS with secure response links` });
+      PATIENTS.forEach((p, i) => {
+        timeouts.push(setTimeout(() => {
+          const row = document.getElementById(rowId(p.pid));
+          if (!row) return;
+          const icons = row.querySelector('.send-icons');
+          if (icons) {
+            icons.classList.add('visible');
+            icons.querySelectorAll('.send-icon').forEach(ic => {
+              ic.classList.add('flash');
+              setTimeout(() => ic.classList.remove('flash'), 600);
+            });
+          }
+          const viewBtn = row.querySelector('.view-btn');
+          if (viewBtn) viewBtn.classList.add('visible');
+          const chip = row.querySelector('[data-status]');
+          if (chip) { chip.className = 'status-chip contacted'; chip.textContent = 'Contacted'; }
+          document.getElementById('eligibleSub').textContent = `${PATIENTS.length} patients contacted · awaiting responses`;
+        }, 60 * i));
+      });
+    }, 1700));
+
+    PATIENTS.forEach(p => {
+      if (p.resp === 'none') return;
+      timeouts.push(setTimeout(() => {
+        setPatientResponse(p, p.resp, true);
+      }, p.delay));
+    });
+
+    const timeoutMoment = 8500;
+    timeouts.push(setTimeout(() => {
+      PATIENTS.filter(p => p.resp === 'none' && !hasResponded(p)).forEach(p => {
+        const row = document.getElementById(rowId(p.pid));
+        if (row) {
+          const chip = row.querySelector('[data-status]');
+          chip.className = 'status-chip timeout';
+          chip.textContent = 'No response';
+        }
+      });
+      pushStream({ time: clockFromStart(timeoutMoment), kind: 'sys', body: `Response window elapsed · <b>${availablePatients.length} of ${PATIENTS.length} available</b>, ${unavailablePatients.length} declined, ${PATIENTS.length - availablePatients.length - unavailablePatients.length} no response` });
+    }, timeoutMoment));
+
+    timeouts.push(setTimeout(() => {
+      pushStream({ time: clockFromStart(9100), kind: 'sys', body: `<b>Applying scheduling policy</b> · clinical priority → surgeon match → pre‑op recency → waiting time` });
+      document.getElementById('recoPanel').innerHTML = `
+        <div class="reco-waiting">
+          <div class="spinner"></div>
+          Ranking ${availablePatients.length} available patients against hospital policy…
+        </div>
+      `;
+    }, 9100));
+
+    timeouts.push(setTimeout(() => {
+      renderRecommendation();
+    }, 10200));
+  }
+
+  const respondedPids = new Set();
+  function hasResponded(p) { return respondedPids.has(p.pid); }
+
+  function setPatientResponse(p, resp, pushEvent) {
+    if (respondedPids.has(p.pid)) return;
+    respondedPids.add(p.pid);
+    const row = document.getElementById(rowId(p.pid));
+    if (row) {
+      const chip = row.querySelector('[data-status]');
+      chip.className = `status-chip ${resp}`;
+      chip.textContent = resp === 'yes' ? 'Available' : 'Not available';
+    }
+    if (resp === 'yes') availablePatients.push(p);
+    else unavailablePatients.push(p);
+    if (pushEvent && caseStart) {
+      pushStream({
+        time: clockFromStart(Date.now() - caseStart),
+        kind: resp,
+        body: `<span class="mono">${p.pid}</span> (${p.initials}) replied <b>${resp === 'yes' ? 'Available' : 'Not available'}</b>`,
+      });
+    }
+    // If we're already past the recommendation stage, re-render
+    if (state === 'recommended') renderRecommendation();
+  }
+
+  function rankAvailable() {
+    return [...availablePatients].sort((a, b) => {
+      if (a.priority !== b.priority) return a.priority - b.priority;
+      if (a.surgeonMatch !== b.surgeonMatch) return a.surgeonMatch ? -1 : 1;
+      if (a.waitDays !== b.waitDays) return b.waitDays - a.waitDays;
+      return 0;
+    });
+  }
+
+  function renderRecommendation() {
+    if (availablePatients.length === 0) {
+      document.getElementById('recoPanel').innerHTML = `
+        <div class="success-overlay">
+          <div style="font-size:14px;color:var(--bad);font-weight:600;margin-bottom:6px;">No available patients</div>
+          <div style="font-size:12.5px;color:var(--fg-muted);">Case will be re-queued; scheduler will be alerted at the 15-minute mark.</div>
+        </div>
+      `;
+      return;
+    }
+    const ranked = rankAvailable();
+    recommendation = ranked[0];
+    runnerUp = ranked[1];
+    const r = recommendation;
+    const reasons = [];
+    reasons.push(`Clinical priority <b>${r.priority}</b> ${ranked.filter(x => x.priority === r.priority).length > 1 ? '(tied, used tie-breakers below)' : '(highest among available patients)'}`);
+    if (r.surgeonMatch) reasons.push(`Matches primary surgeon preference (<b>${CASE.surgeon}</b>)`);
+    reasons.push(`Waiting <b>${r.waitDays} days</b>`);
+    reasons.push(`Pre-operative assessment completed <b>${r.preOpDate}</b> · within policy window`);
+    reasons.push(`Opted in to <b>short-notice list</b>`);
+
+    const runnerText = runnerUp ? `
+      <div class="runner-up">
+        <div class="runner-up-label">Runner-up</div>
+        <span class="mono">${runnerUp.pid}</span> (${runnerUp.initials}, ${runnerUp.age}) · Priority ${runnerUp.priority}
+        ${runnerUp.surgeonMatch ? '· Dr. Chen match' : '· surgeon pref: other'}
+        · ${runnerUp.waitDays} days waiting
+      </div>` : '';
+
+    document.getElementById('recoPanel').innerHTML = `
+      <div class="reco-card">
+        <div class="reco-label">
+          <svg class="ico" viewBox="0 0 20 20"><path d="M8 13l-4-4 1.4-1.4L8 10.2l6.6-6.6L16 5z"/></svg>
+          Recommended replacement
+        </div>
+        <div class="reco-primary">
+          <div class="pid">${r.initials}</div>
+          <div>
+            <div class="pname">${r.pid} <span class="chip priority-${r.priority}">Priority ${r.priority}</span></div>
+            <div class="pmeta">${r.age} yrs · ${r.waitDays} days waiting · Pre-op ${r.preOpDate}</div>
+          </div>
+        </div>
+        <div class="reasoning">
+          <div style="margin-bottom: 6px;"><b>Why this patient</b></div>
+          <ol>
+            ${reasons.map(x => `<li>${x}</li>`).join('')}
+          </ol>
+          Policy source: <span class="mono">RUH-SURG-2024-03</span> · Short-Notice Rebooking Protocol
+        </div>
+        ${runnerText}
+        <div class="reco-actions">
+          <button class="btn btn-success" id="confirmBtn">
+            <svg class="ico" viewBox="0 0 20 20"><path d="M8 13l-4-4 1.4-1.4L8 10.2l6.6-6.6L16 5z"/></svg>
+            Confirm booking
+          </button>
+          <button class="btn btn-ghost" id="overrideBtn">Override</button>
+        </div>
+        <div class="override-link" id="pickOtherLink">
+          <svg class="ico-sm" viewBox="0 0 20 20"><path d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0-4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 8a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"/></svg>
+          View all ${availablePatients.length} available patients
+        </div>
+      </div>
+    `;
+    state = 'recommended';
+
+    document.getElementById('confirmBtn').addEventListener('click', () => confirmBooking(recommendation));
+    document.getElementById('overrideBtn').addEventListener('click', openOverridePicker);
+    document.getElementById('pickOtherLink').addEventListener('click', openOverridePicker);
+  }
+
+  // ---------- Manual override picker ----------
+  function openOverridePicker() {
+    const ranked = rankAvailable();
+    const content = `
+      <div class="modal-head">
+        <div>
+          <div class="modal-title">Select replacement patient</div>
+          <div style="font-size:12.5px;color:var(--fg-muted);margin-top:2px;">Choose a patient and provide a reason. The override is written to the audit trail.</div>
+        </div>
+        <button class="modal-close" onclick="closeModal()" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body" style="padding:20px;">
+        <div class="override-list" id="overrideList">
+          ${ranked.map((p, i) => `
+            <label class="override-row ${i === 0 ? 'selected' : ''}" data-pid="${p.pid}">
+              <input type="radio" name="override" value="${p.pid}" ${i === 0 ? 'checked' : ''}>
+              <div>
+                <div class="pname" style="font-size:13px;">${p.pid} (${p.initials}, ${p.age}) <span class="chip priority-${p.priority}">P${p.priority}</span></div>
+                <div class="pmeta" style="margin-top:3px;">
+                  ${p.surgeonMatch ? '<span style="color:var(--good)">✓ Dr. Chen</span>' : 'Dr. Chen OK'}
+                  <span class="dot">·</span>
+                  ${p.waitDays} days waiting
+                  <span class="dot">·</span>
+                  Pre-op ${p.preOpDate}
+                </div>
+              </div>
+              <div style="font-size:11px;color:var(--fg-subtle);text-align:right;">
+                ${i === 0 ? '<span style="color:var(--good);font-weight:600;">RECOMMENDED</span>' : 'Rank #' + (i + 1)}
+              </div>
+            </label>
+          `).join('')}
+        </div>
+        <div style="margin-top:14px;">
+          <label style="font-size:12px;color:var(--fg-subtle);font-weight:600;text-transform:uppercase;letter-spacing:0.05em;">Override reason</label>
+          <textarea class="override-reason" id="overrideReason" rows="3" placeholder="e.g. Patient transportation issue, surgeon's clinical preference, equipment considerations…"></textarea>
+          <div style="font-size:11.5px;color:var(--fg-subtle);margin-top:6px;">
+            Required when selecting a patient other than the system recommendation. Written to audit log.
+          </div>
+        </div>
+      </div>
+      <div style="padding:14px 20px;border-top:1px solid var(--border);display:flex;gap:8px;justify-content:flex-end;background:var(--surface);border-radius:0 0 12px 12px;">
+        <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+        <button class="btn btn-primary" id="overrideConfirm">Confirm selection</button>
+      </div>
+    `;
+    openModal(content);
+
+    document.querySelectorAll('.override-row').forEach(row => {
+      row.addEventListener('click', () => {
+        document.querySelectorAll('.override-row').forEach(r => r.classList.toggle('selected', r === row));
+        row.querySelector('input[type="radio"]').checked = true;
+      });
+    });
+
+    document.getElementById('overrideConfirm').addEventListener('click', () => {
+      const pid = document.querySelector('input[name="override"]:checked').value;
+      const reason = document.getElementById('overrideReason').value.trim();
+      const picked = availablePatients.find(x => x.pid === pid);
+      const isRecommended = picked.pid === recommendation.pid;
+      if (!isRecommended && !reason) {
+        document.getElementById('overrideReason').focus();
+        document.getElementById('overrideReason').style.borderColor = 'var(--bad)';
+        showToast('A reason is required when overriding the recommendation.');
+        return;
+      }
+      closeModal();
+      confirmBooking(picked, isRecommended ? null : reason);
+    });
+  }
+
+  function confirmBooking(patient, overrideReason) {
+    if (!patient) return;
+    const elapsed = Date.now() - caseStart;
+    clearInterval(timerInterval);
+    state = 'filled';
+
+    document.getElementById('caseRibbon').className = 'case-ribbon filled';
+    document.getElementById('ribbonHead').innerHTML =
+      `OR slot recovered · ${patient.pid} booked · ${CASE.procedure}`;
+    document.getElementById('ribbonSub').innerHTML =
+      overrideReason
+        ? `Confirmed by R. Wiebe <b>(override)</b> · Patient notified · Case closed`
+        : `Confirmed by R. Wiebe · Patient notified · Case closed`;
+
+    document.getElementById('recoPanel').innerHTML = `
+      <div class="success-overlay">
+        <div class="success-icon">
+          <svg class="ico" viewBox="0 0 20 20" style="width:24px;height:24px;fill:#fff;"><path d="M8 13l-4-4 1.4-1.4L8 10.2l6.6-6.6L16 5z"/></svg>
+        </div>
+        <div class="success-title">Booking confirmed</div>
+        <div class="success-sub">${patient.pid} (${patient.initials}) scheduled for 10:00 AM · ${CASE.procedure}</div>
+        <div style="margin-top:16px;font-size:12.5px;color:var(--fg-muted);">
+          Patient receiving confirmation email + SMS.<br>
+          Other eligible patients receiving thank-you notice.<br>
+          Audit trail written to <span class="mono">${CASE.caseId}</span>.
+          ${overrideReason ? '<br><br><div style="background:var(--warn-soft);color:var(--warn);padding:8px 10px;border-radius:6px;font-size:12px;"><b>Override reason:</b> ' + overrideReason + '</div>' : ''}
+        </div>
+      </div>
+    `;
+
+    pushStream({ time: clockFromStart(elapsed), kind: 'yes', body: `<b>Booking confirmed</b> by R. Wiebe · <span class="mono">${patient.pid}</span> scheduled${overrideReason ? ' · <b>override applied</b>' : ''}` });
+
+    // Add to recovery log
+    const tbody = document.getElementById('recoveryLog');
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td class="mono">${timeStr}</td>
+      <td>${CASE.procedure}</td>
+      <td>${CASE.surgeon}</td>
+      <td class="mono">${CASE.cancelledPid} (${CASE.cancelledInitials})</td>
+      <td class="mono">${patient.pid} (${patient.initials})</td>
+      <td>${fmtTimer(elapsed)}</td>
+      <td><span class="status-chip yes">Recovered${overrideReason ? ' · override' : ''}</span></td>
+    `;
+    row.style.background = 'var(--good-soft)';
+    tbody.insertBefore(row, tbody.firstChild);
+    setTimeout(() => { row.style.transition = 'background 1.5s'; row.style.background = ''; }, 40);
+
+    // Also add to audit log
+    const auditBody = document.getElementById('auditBody');
+    const auditRow = document.createElement('tr');
+    auditRow.innerHTML = `
+      <td class="mono">Today ${timeStr}</td>
+      <td>R. Wiebe</td>
+      <td>${overrideReason ? 'Override applied' : 'Booking confirmed'}</td>
+      <td class="mono">${patient.pid} → OR 6 · 10:00</td>
+      <td>${overrideReason || 'System recommendation accepted'}</td>
+    `;
+    auditBody.insertBefore(auditRow, auditBody.firstChild);
+
+    // Bump metrics
+    const slots = document.getElementById('mSlots');
+    slots.textContent = parseInt(slots.textContent, 10) + 1;
+    const hours = document.getElementById('mHours');
+    hours.textContent = (parseFloat(hours.textContent) + 2.5).toFixed(1);
+    document.getElementById('mTime').textContent = fmtTimer(elapsed);
+
+    document.getElementById('triggerBtn').disabled = false;
+  }
+
+  // ---------- Modal system ----------
+  const modalBackdrop = document.getElementById('modalBackdrop');
+  const modal = document.getElementById('modal');
+  function openModal(html) {
+    modal.innerHTML = html;
+    modalBackdrop.hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+  window.closeModal = function() {
+    modalBackdrop.hidden = true;
+    modal.innerHTML = '';
+    document.body.style.overflow = '';
+  };
+  modalBackdrop.addEventListener('click', (e) => { if (e.target === modalBackdrop) closeModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeModal(); });
+
+  // ---------- Email / SMS outreach preview ----------
+  function openOutreachModal(p, startTab) {
+    const secureLink = `https://ruh.sk.ca/respond/${p.pid.replace(/[^0-9]/g,'')}-${Math.random().toString(36).slice(2, 8)}`;
+    const tabs = [];
+    if (p.contact === 'email' || p.contact === 'both') tabs.push('email');
+    if (p.contact === 'sms' || p.contact === 'both') tabs.push('sms');
+    const defaultTab = startTab && tabs.includes(startTab) ? startTab : tabs[0];
+
+    const emailHtml = renderEmailFrame(p, secureLink);
+    const smsHtml = renderSmsFrame(p, secureLink);
+
+    const content = `
+      <div class="modal-head">
+        <div>
+          <div class="modal-title">Outreach · ${p.pid} (${p.initials})</div>
+          <div style="font-size:12.5px;color:var(--fg-muted);margin-top:2px;">
+            Sent today at ${new Date(caseStart + 1700 + Math.random() * 400).toLocaleTimeString('en-CA', { hour12: false })} · Response link expires in 15 minutes
+          </div>
+        </div>
+        <button class="modal-close" onclick="closeModal()" aria-label="Close">×</button>
+      </div>
+      <div class="modal-tabs">
+        ${tabs.includes('email') ? `<div class="modal-tab ${defaultTab === 'email' ? 'active' : ''}" data-tab="email">
+          <svg class="ico" viewBox="0 0 20 20" style="margin-right:5px;vertical-align:middle;"><path d="M2 4h16v12H2zm0 0l8 6 8-6"/></svg>Email
+        </div>` : ''}
+        ${tabs.includes('sms') ? `<div class="modal-tab ${defaultTab === 'sms' ? 'active' : ''}" data-tab="sms">
+          <svg class="ico" viewBox="0 0 20 20" style="margin-right:5px;vertical-align:middle;"><path d="M2 2h14a2 2 0 012 2v8a2 2 0 01-2 2H8l-5 5V4a2 2 0 012-2z"/></svg>SMS
+        </div>` : ''}
+        <div style="margin-left:auto;align-self:center;padding:0 4px;">
+          <button class="btn btn-ghost btn-sm" id="openAsPatientBtn">
+            <svg class="ico-sm" viewBox="0 0 20 20"><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 3a2 2 0 110 4 2 2 0 010-4zm0 11a6 6 0 01-4.8-2.4c0-1.6 3.2-2.5 4.8-2.5s4.8.9 4.8 2.5A6 6 0 0110 16z"/></svg>
+            Open as patient
+          </button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div id="emailPane" ${defaultTab === 'email' ? '' : 'hidden'}>${emailHtml}</div>
+        <div id="smsPane" ${defaultTab === 'sms' ? '' : 'hidden'}>${smsHtml}</div>
+      </div>
+    `;
+    openModal(content);
+
+    document.querySelectorAll('.modal-tab').forEach(t => {
+      t.addEventListener('click', () => {
+        document.querySelectorAll('.modal-tab').forEach(x => x.classList.toggle('active', x === t));
+        const tab = t.dataset.tab;
+        document.getElementById('emailPane').hidden = tab !== 'email';
+        document.getElementById('smsPane').hidden = tab !== 'sms';
+      });
+    });
+
+    document.getElementById('openAsPatientBtn').addEventListener('click', () => openPatientResponsePage(p, secureLink));
+  }
+
+  function renderEmailFrame(p, link) {
+    const toField = p.email || 'patient@saskmail.ca';
+    return `
+      <div class="email-frame">
+        <div class="email-head">
+          <div class="field"><b>From:</b> Royal University Hospital &lt;noreply@ruh.sk.ca&gt;</div>
+          <div class="field"><b>To:</b> ${toField}</div>
+          <div class="field"><b>Subject:</b> An earlier surgical appointment may be available — please reply by 10:15 AM</div>
+        </div>
+        <div class="email-body">
+          <div class="logo-bar">ROYAL UNIVERSITY HOSPITAL · SASKATOON</div>
+          <h3>Hello ${p.initials.replace(/\./g,'')},</h3>
+          <p>An earlier appointment for your scheduled surgery may be available today due to a last-minute cancellation. Please let us know if you are able to attend by <b>10:15 AM</b>.</p>
+
+          <div class="procedure-box">
+            <div><span style="color:#6b7280;font-size:12px;">PROCEDURE</span></div>
+            <div><b>${CASE.procedure}</b></div>
+            <div style="margin-top:6px;"><span style="color:#6b7280;font-size:12px;">SURGEON · LOCATION · TIME</span></div>
+            <div><b>${CASE.surgeon}</b> · ${CASE.facility} · <b>${CASE.slotTime}</b></div>
+            <div style="margin-top:6px;"><span style="color:#6b7280;font-size:12px;">DURATION · ANESTHESIA</span></div>
+            <div>${CASE.procedureDuration} · ${CASE.anesthesia}</div>
+          </div>
+
+          <p>If you are available, please follow the secure link below. The link is unique to you and will expire in 15 minutes.</p>
+
+          <div style="text-align:center;margin:18px 0 10px;">
+            <a class="email-cta" id="emailCta">Confirm availability</a>
+          </div>
+
+          <p style="font-size:12.5px;color:#4a5568;">If the button doesn't work, copy and paste this link into your browser:</p>
+          <p style="font-size:12px;color:#2563A6;word-break:break-all;background:#f6f8fa;padding:8px 10px;border-radius:5px;">${link}</p>
+
+          <p style="margin-top:20px;">If you are not available, please reply by selecting <b>Not available</b> at the link above so we can offer the slot to another patient. Your place on the waitlist is not affected.</p>
+
+          <p>Thank you,<br><b>RUH Surgical Services</b></p>
+        </div>
+        <div class="email-footer">
+          This message was sent by Royal University Hospital via ORecover. Please do not reply to this email. For questions, call RUH Surgical Services at (306) 655-1000.<br>
+          Received this in error? <a href="#" style="color:#2563A6;">Opt out of short-notice outreach</a>.
+        </div>
+      </div>
+    `;
+  }
+
+  function renderSmsFrame(p, link) {
+    const phone = p.phone || '(306) 555‑xxxx';
+    return `
+      <div class="sms-frame">
+        <div class="sms-screen">
+          <div class="sms-topbar">${phone}</div>
+          <div class="sms-sender">RUH Surgical</div>
+          <div class="sms-time">Today ${new Date(caseStart + 1700).toLocaleTimeString('en-CA', { hour: '2-digit', minute: '2-digit', hour12: false })}</div>
+          <div class="sms-bubble">
+            RUH: An earlier surgical appointment may be available today. Please use the secure link to confirm availability by 10:15 AM.<br>
+            <span class="sms-link" id="smsLink">${link}</span>
+          </div>
+          <div class="sms-time">Reply STOP to opt out</div>
+        </div>
+      </div>
+    `;
+  }
+
+  // ---------- Patient-side response page ----------
+  function openPatientResponsePage(p, link) {
+    const alreadyResponded = respondedPids.has(p.pid);
+    const content = `
+      <div class="modal-head">
+        <div>
+          <div class="modal-title">Patient response page</div>
+          <div style="font-size:12.5px;color:var(--fg-muted);margin-top:2px;">
+            What ${p.initials} sees after tapping the secure link in their email or SMS
+          </div>
+        </div>
+        <button class="modal-close" onclick="closeModal()" aria-label="Close">×</button>
+      </div>
+      <div class="modal-body" style="background:var(--bg);padding:20px 0;">
+        <div class="response-wrap" id="responseWrap">
+          ${renderResponseInner(p, alreadyResponded)}
+        </div>
+      </div>
+    `;
+    openModal(content);
+    attachResponseHandlers(p);
+  }
+
+  function renderResponseInner(p, alreadyResponded) {
+    if (alreadyResponded) {
+      const yes = availablePatients.some(a => a.pid === p.pid);
+      return `
+        <div class="response-top">
+          <div class="brand-mark">OR</div>
+          <h2>Royal University Hospital</h2>
+          <p>Surgical Services · Short-notice response</p>
+        </div>
+        <div class="response-answered">
+          <div class="success-icon" style="background:${yes ? 'var(--good)' : 'var(--fg-subtle)'};">
+            <svg viewBox="0 0 20 20" width="24" height="24" fill="#fff">${yes ? '<path d="M8 13l-4-4 1.4-1.4L8 10.2l6.6-6.6L16 5z"/>' : '<path d="M3 10h14v2H3z"/>'}</svg>
+          </div>
+          <div class="success-title">Response recorded</div>
+          <div class="success-sub">You replied: <b>${yes ? 'Available' : 'Not available'}</b></div>
+          <div style="margin-top:14px;font-size:12.5px;color:var(--fg-muted);">
+            ${yes
+              ? 'Our scheduling team is reviewing responses. If you are selected, we will contact you within the hour to confirm. Thank you.'
+              : 'Thank you for letting us know. Your place on the waitlist is not affected.'}
+          </div>
+        </div>
+      `;
+    }
+    return `
+      <div class="response-top">
+        <div class="brand-mark">OR</div>
+        <h2>Royal University Hospital</h2>
+        <p>Surgical Services · Short-notice response</p>
+      </div>
+      <div class="response-body">
+        <h3>An earlier appointment may be available</h3>
+        <div class="response-detail">
+          <div><span class="label">Procedure</span></div>
+          <div class="val">${CASE.procedure}</div>
+          <div style="margin-top:6px;"><span class="label">Surgeon</span></div>
+          <div class="val">${CASE.surgeon}</div>
+          <div style="margin-top:6px;"><span class="label">Location &amp; time</span></div>
+          <div class="val">${CASE.facility} · ${CASE.slotTime}</div>
+        </div>
+        <p style="font-size:13px;color:var(--fg-muted);margin:0 0 14px;">
+          Please let us know if you are able to attend. This does not replace your scheduled surgery date — if you say no, your place on the waitlist is unchanged.
+        </p>
+        <div class="response-choices">
+          <button class="choice-btn choice-yes" data-choice="yes">
+            <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor"><path d="M8 13l-4-4 1.4-1.4L8 10.2l6.6-6.6L16 5z"/></svg>
+            Yes, I'm available
+          </button>
+          <button class="choice-btn choice-no" data-choice="no">
+            <svg viewBox="0 0 20 20" width="18" height="18" fill="currentColor"><path d="M14 6L6 14m0-8l8 8" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round"/></svg>
+            No, I can't make it
+          </button>
+        </div>
+      </div>
+      <div class="response-foot">
+        Secure response link · expires in 15 minutes · hospital use only
+      </div>
+    `;
+  }
+
+  function attachResponseHandlers(p) {
+    document.querySelectorAll('.choice-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const choice = btn.dataset.choice;
+        setPatientResponse(p, choice, true);
+        document.getElementById('responseWrap').innerHTML = renderResponseInner(p, true);
+      });
+    });
+  }
+
+  // ---------- Toast ----------
+  function showToast(msg) {
+    const existing = document.querySelector('.toast');
+    if (existing) existing.remove();
+    const t = el('div', { class: 'toast' });
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(() => t.remove(), 2800);
+  }
+
+  // ---------- Wire up ----------
+  document.getElementById('triggerBtn').addEventListener('click', trigger);
+  document.getElementById('resetBtn').addEventListener('click', reset);
+
+  // Keep "last sync" counter ticking
+  let syncSec = 14;
+  setInterval(() => {
+    syncSec = (syncSec + 1) % 60;
+    document.getElementById('lastSync').textContent = `${syncSec} sec ago`;
+  }, 1000);
+</script>
+
+</body></html>
